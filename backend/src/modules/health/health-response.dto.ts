@@ -1,6 +1,8 @@
 export class HealthResponseDto {
-  /** Service availability. Database readiness will be added in MCH-81. */
-  status!: 'ok';
+  /** Service availability. */
+  status!: 'ok' | 'degraded';
+  /** Database connectivity. */
+  db!: 'up' | 'down';
   /** Process uptime in seconds. */
   uptime!: number;
   /** Current server time in ISO 8601 format. */

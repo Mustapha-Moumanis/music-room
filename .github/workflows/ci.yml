@@ -40,6 +40,8 @@ jobs:
       CORS_ORIGINS: http://localhost:3000
       LOG_LEVEL: warn
       DATABASE_URL: postgresql://musicroom:ci-password@localhost:5432/musicroom_test?schema=public
+      # test/setup-env.ts prefers this over its localhost:5433 default.
+      TEST_DATABASE_URL: postgresql://musicroom:ci-password@localhost:5432/musicroom_test?schema=public
       JWT_ACCESS_SECRET: ci-not-a-secret-access-0000000000000000
       JWT_ACCESS_TTL: 15m
       JWT_REFRESH_SECRET: ci-not-a-secret-refresh-000000000000000

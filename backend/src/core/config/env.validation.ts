@@ -28,6 +28,9 @@ export class EnvironmentVariables {
   @IsUrl({ protocols: ['postgres', 'postgresql'], require_protocol: true, require_tld: false })
   DATABASE_URL!: string;
 
+  @IsOptional() @IsUrl({ protocols: ['postgres', 'postgresql'], require_protocol: true, require_tld: false })
+  TEST_DATABASE_URL?: string;
+
   @IsString() @Matches(/\S/)
   JWT_ACCESS_SECRET!: string;
 

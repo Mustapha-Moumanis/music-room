@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 import { HealthResponseDto } from './health-response.dto';
 import { HealthService } from './health.service';
 
@@ -9,9 +10,13 @@ export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get()
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Check API availability' })
   @ApiOkResponse({ type: HealthResponseDto })
-  getHealth(): HealthResponseDto {
-    return this.healthService.getHealth();
+  @ApiServiceUnavailableResponse({ type: HealthResponseDto })
+  async getHealth(@Res({ passthrough: true }) response: Response): Promise<HealthResponseDto> {
+    const health = await this.healthService.getHealth();
+    if (health.db === 'down') response.status(HttpStatus.SERVICE_UNAVAILABLE);
+    return health;
   }
 }
