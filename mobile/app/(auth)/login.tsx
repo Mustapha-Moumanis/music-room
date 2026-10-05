@@ -1,14 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { pingHealth } from '../../src/api/health';
 import { Action, Screen, styles } from '../../src/components/ui';
+import { isDevBuild } from '../../src/config/variant';
 import { useSettingsStore } from '../../src/stores/settings.store';
-
-// The EAS "spike" APK is a release build (__DEV__ false) of the .dev variant.
-const isDevVariant = Constants.expoConfig?.extra?.appVariant === 'development';
 
 export default function LoginScreen() {
   const backendUrl = useSettingsStore((state) => state.backendUrl);
@@ -25,7 +22,7 @@ export default function LoginScreen() {
         {health.isError ? `Error — ${health.error.message}` : health.data ? `OK · ${health.data.latencyMs} ms` : 'Checking connection…'}
       </Text>
     </View>
-    {(__DEV__ || isDevVariant) && <Action title="Google sign-in spike" secondary onPress={() => router.push('/dev/google-spike')} />}
+    {isDevBuild() && <Action title="Google sign-in spike" secondary onPress={() => router.push('/dev/google-spike')} />}
     <Action title="Server settings" secondary onPress={() => router.push('/settings')} />
   </Screen>;
 }

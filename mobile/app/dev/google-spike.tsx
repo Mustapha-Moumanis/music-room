@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 
 import { type GoogleSignInResult, signInWithGoogle, signOutWithGoogle } from '../../src/auth/google';
 import { Action, Screen, styles } from '../../src/components/ui';
+import { isDevBuild } from '../../src/config/variant';
 
 export default function GoogleSpikeScreen() {
   const [result, setResult] = useState<GoogleSignInResult | null>(null);
@@ -12,7 +13,7 @@ export default function GoogleSpikeScreen() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  if (!__DEV__) return <Redirect href="/(auth)/login" />;
+  if (!isDevBuild()) return <Redirect href="/(auth)/login" />;
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
