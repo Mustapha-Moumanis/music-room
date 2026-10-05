@@ -15,6 +15,7 @@ const config: ExpoConfig = {
   plugins: [
     'expo-router',
     'expo-dev-client',
+    '@react-native-google-signin/google-signin',
     'expo-secure-store',
     ['expo-build-properties', { android: { usesCleartextTraffic: true } }],
   ],
