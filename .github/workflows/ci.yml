@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (lint, typecheck, unit, e2e, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: musicroom
+          POSTGRES_PASSWORD: ci-password
+          POSTGRES_DB: musicroom_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U musicroom -d musicroom_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # Dummy values only: every variable required by src/core/config/env.validation.ts.
+    env:
+      NODE_ENV: test
+      BACKEND_PORT: 3000
+      APP_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+      LOG_LEVEL: warn
+      DATABASE_URL: postgresql://musicroom:ci-password@localhost:5432/musicroom_test?schema=public
+      JWT_ACCESS_SECRET: ci-not-a-secret-access-0000000000000000
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_SECRET: ci-not-a-secret-refresh-000000000000000
+      JWT_REFRESH_TTL: 30d
+      EMAIL_VERIFY_TTL: 24h
+      PASSWORD_RESET_TTL: 15m
+      THROTTLE_TTL_MS: 60000
+      THROTTLE_LIMIT: 100
+      AUTH_THROTTLE_LIMIT: 5
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      MAIL_FROM: Music Room <no-reply@musicroom.local>
+      GOOGLE_WEB_CLIENT_ID: ""
+      DEEZER_API_URL: https://api.deezer.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --ci
+      - name: Apply migrations
+        run: npm run prisma:deploy --if-present
+      - run: npm run test:e2e -- --ci
+      - run: npm run build
+
+  mobile:
+    name: Mobile (lint, typecheck, jest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --ci
+
+  secrets:
+    name: Secret scan (gitleaks + tracked .env)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: No tracked .env files
+        run: make check-secrets
+      # Docker image instead of gitleaks-action: no license needed for org repos,
+      # and it is the exact command `make check-secrets`-style local runs use.
+      - name: gitleaks (full history)
+        run: >-
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.3
+          detect --source /repo --config /repo/.gitleaks.toml --redact -v

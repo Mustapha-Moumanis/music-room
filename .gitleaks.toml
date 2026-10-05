@@ -1,0 +1,15 @@
+# gitleaks: default rules plus a narrow allowlist for the obvious placeholders
+# shipped in .env.example files and CI dummy values. Anything else still fails.
+title = "music-room"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented placeholders only"
+regexTarget = "match"
+regexes = [
+  '''change-me[\w-]*''',
+  '''ci-not-a-secret[\w-]*''',
+  '''ci-password''',
+]
