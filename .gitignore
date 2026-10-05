@@ -31,3 +31,6 @@ backend/uploads/
 
 # Generated knowledge-graph output (graphify hooks)
 graphify-out/
+# Public React Native debug keystore, used to sign the EAS "spike" APK so its
+# SHA-1 matches the Google Android OAuth client. Never use it for releases.
+!mobile/credentials/debug.keystore
