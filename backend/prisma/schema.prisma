@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IdentityProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum EmailTokenType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+enum TrackProvider {
+  DEEZER
+}
+
+enum ResourceVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum EventLicense {
+  EVERYONE
+  INVITED
+  LOCATION_TIME
+}
+
+enum PlaylistLicense {
+  EVERYONE
+  INVITED
+}
+
+enum EventStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+enum EventTrackStatus {
+  QUEUED
+  PLAYING
+  PLAYED
+}
+
+enum ActionLogKind {
+  HTTP
+  SOCKET
+  CLIENT
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  passwordHash   String?
+  emailVerifiedAt DateTime?
+  displayName    String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  identities       Identity[]
+  refreshTokens    RefreshToken[]
+  emailTokens      EmailToken[]
+  profile          Profile?
+  sentFriendships  Friendship[]   @relation("FriendshipRequester")
+  receivedFriendships Friendship[] @relation("FriendshipAddressee")
+  ownedEvents      Event[]        @relation("EventOwner")
+  eventInvites     EventInvite[]
+  suggestedTracks  EventTrack[]   @relation("EventTrackSuggestedBy")
+  votes            Vote[]
+  ownedPlaylists   Playlist[]     @relation("PlaylistOwner")
+  playlistMembers  PlaylistMember[]
+  addedPlaylistTracks PlaylistTrack[] @relation("PlaylistTrackAddedBy")
+  actionLogs       ActionLog[]
+
+  @@index([email])
+}
+
+model Identity {
+  id         String           @id @default(cuid())
+  provider   IdentityProvider
+  providerId String
+  userId     String
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@unique([provider, userId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id           String    @id @default(cuid())
+  tokenHash    String    @unique
+  familyId     String
+  userId       String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?   @unique
+  userAgent    String?
+  device       String?
+  ip           String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replacedBy RefreshToken? @relation("RefreshTokenRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces   RefreshToken? @relation("RefreshTokenRotation")
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+model EmailToken {
+  id        String         @id @default(cuid())
+  type      EmailTokenType
+  tokenHash String         @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([expiresAt])
+}
+
+model Profile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  publicInfo       Json     @default("{}")
+  friendsInfo      Json     @default("{}")
+  privateInfo      Json     @default("{}")
+  avatarUrl        String?
+  bio              String?
+  musicPreferences String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([requesterId, status])
+  @@index([addresseeId, status])
+}
+
+model Track {
+  id              String        @id @default(cuid())
+  provider        TrackProvider
+  providerTrackId String
+  title           String
+  artist          String
+  album           String?
+  durationSec     Int?
+  coverUrl        String?
+  previewUrl      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  eventTracks    EventTrack[]
+  playlistTracks PlaylistTrack[]
+
+  @@unique([provider, providerTrackId])
+  @@index([title])
+  @@index([artist])
+}
+
+model Event {
+  id                       String             @id @default(cuid())
+  ownerId                  String
+  name                     String
+  description              String?
+  visibility               ResourceVisibility @default(PUBLIC)
+  license                  EventLicense       @default(EVERYONE)
+  latitude                 Float?
+  longitude                Float?
+  radiusMeters             Int?
+  startsAt                 DateTime?
+  endsAt                   DateTime?
+  timezone                 String?
+  status                   EventStatus        @default(DRAFT)
+  version                  Int                @default(0)
+  nowPlayingEventTrackId   String?            @unique
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
+
+  owner                User          @relation("EventOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  invites              EventInvite[]
+  tracks               EventTrack[]  @relation("EventTracks")
+  nowPlayingEventTrack EventTrack?   @relation("EventNowPlaying", fields: [nowPlayingEventTrackId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([visibility, status])
+  @@index([startsAt, endsAt])
+}
+
+model EventInvite {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+model EventTrack {
+  id            String           @id @default(cuid())
+  eventId       String
+  trackId       String
+  suggestedById String
+  voteCount     Int              @default(0)
+  status        EventTrackStatus @default(QUEUED)
+  playedAt      DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  event       Event  @relation("EventTracks", fields: [eventId], references: [id], onDelete: Cascade)
+  track       Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  suggestedBy User   @relation("EventTrackSuggestedBy", fields: [suggestedById], references: [id], onDelete: Cascade)
+  votes       Vote[]
+  nowPlayingFor Event? @relation("EventNowPlaying")
+
+  @@unique([eventId, trackId])
+  @@index([eventId, status, voteCount(sort: Desc), createdAt])
+  @@index([trackId])
+  @@index([suggestedById])
+}
+
+model Vote {
+  id           String   @id @default(cuid())
+  eventTrackId String
+  userId       String
+  createdAt    DateTime @default(now())
+
+  eventTrack EventTrack @relation(fields: [eventTrackId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventTrackId, userId])
+  @@index([userId])
+}
+
+model Playlist {
+  id          String             @id @default(cuid())
+  ownerId     String
+  name        String
+  description String?
+  visibility  ResourceVisibility @default(PUBLIC)
+  license     PlaylistLicense    @default(EVERYONE)
+  version     Int                @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  owner   User             @relation("PlaylistOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members PlaylistMember[]
+  tracks  PlaylistTrack[]
+
+  @@index([ownerId])
+  @@index([visibility])
+}
+
+model PlaylistMember {
+  id         String   @id @default(cuid())
+  playlistId String
+  userId     String
+  canEdit    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, userId])
+  @@index([userId])
+}
+
+model PlaylistTrack {
+  id         String   @id @default(cuid())
+  playlistId String
+  trackId    String
+  /// Integer gap ordering starts at 1000 and inserts between neighbors when possible; later playlist writes can compact positions inside a row-locked transaction.
+  position   Int
+  addedById  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track    Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  addedBy  User     @relation("PlaylistTrackAddedBy", fields: [addedById], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, trackId])
+  @@index([playlistId, position])
+  @@index([trackId])
+  @@index([addedById])
+}
+
+model ActionLog {
+  id         BigInt        @id @default(autoincrement())
+  userId     String?
+  kind       ActionLogKind
+  action     String
+  method     String?
+  route      String?
+  statusCode Int?
+  platform   String
+  device     String
+  appVersion String
+  requestId  String?
+  durationMs Int?
+  ip         String?
+  meta       Json?
+  createdAt  DateTime      @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([kind, createdAt])
+  @@index([route])
+}

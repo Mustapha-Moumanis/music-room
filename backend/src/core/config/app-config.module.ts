@@ -6,11 +6,10 @@ import { validate } from './env.validation';
 
 @Global()
 @Module({
-  imports: [ConfigModule.forRoot({
+    imports: [ConfigModule.forRoot({
     isGlobal: true,
     envFilePath: [resolve(process.cwd(), '../.env'), resolve(process.cwd(), '.env')],
     ignoreEnvFile: process.env.NODE_ENV === 'test',
-    skipProcessEnv: true,
     validate,
   })],
   providers: [AppConfigService],

@@ -10,7 +10,7 @@ describe('environment validation', () => {
     expect(env.SMTP_USER).toBe('');
   });
 
-  it.each(Object.keys(testEnv).filter((key) => !['SMTP_USER', 'SMTP_PASSWORD', 'GOOGLE_WEB_CLIENT_ID'].includes(key)))(
+  it.each(Object.keys(testEnv).filter((key) => !['SMTP_USER', 'SMTP_PASSWORD', 'GOOGLE_WEB_CLIENT_ID', 'TEST_DATABASE_URL'].includes(key)))(
     'rejects missing %s', (key) => {
       const env: Record<string, unknown> = { ...testEnv };
       delete env[key];
@@ -22,7 +22,7 @@ describe('environment validation', () => {
     ['BACKEND_PORT', '65536'], ['SMTP_PORT', 'abc'], ['THROTTLE_LIMIT', '0'],
     ['NODE_ENV', 'staging'], ['JWT_ACCESS_TTL', 'forever'], ['CORS_ORIGINS', '*'],
     ['CORS_ORIGINS', 'http://localhost:3000,'], ['APP_URL', 'invalid'],
-    ['DATABASE_URL', 'https://example.com'], ['MAIL_FROM', 'bad-mail'],
+    ['DATABASE_URL', 'https://example.com'], ['TEST_DATABASE_URL', 'https://example.com'], ['MAIL_FROM', 'bad-mail'],
     ['LOG_LEVEL', 'verbose'], ['DEEZER_API_URL', 'ftp://example.com'],
   ])('rejects invalid %s', (key, value) => {
     expect(() => validate({ ...testEnv, [key]: value })).toThrow(key);

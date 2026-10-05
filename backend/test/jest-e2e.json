@@ -14,5 +14,6 @@
   "setupFiles": [
     "<rootDir>/test/setup-env.ts"
   ],
+  "globalSetup": "<rootDir>/test/global-setup.ts",
   "testEnvironment": "node"
 }
