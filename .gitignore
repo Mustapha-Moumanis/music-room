@@ -28,3 +28,6 @@ backend/uploads/
 .DS_Store
 .idea/
 .vscode/
+
+# Generated knowledge-graph output (graphify hooks)
+graphify-out/
