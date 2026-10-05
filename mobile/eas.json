@@ -1,9 +1,21 @@
 {
+  "cli": {
+    "appVersionSource": "local"
+  },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
       "env": { "APP_VARIANT": "development" },
+      "android": { "buildType": "apk" }
+    },
+    "spike": {
+      "distribution": "internal",
+      "credentialsSource": "local",
+      "env": {
+        "APP_VARIANT": "development",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "333264226596-u0brngm2tr2j3jct14b7ck7495cjpkq9.apps.googleusercontent.com"
+      },
       "android": { "buildType": "apk" }
     }
   }
