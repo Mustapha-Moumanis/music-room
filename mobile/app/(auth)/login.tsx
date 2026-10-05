@@ -21,6 +21,7 @@ export default function LoginScreen() {
         {health.isError ? `Error — ${health.error.message}` : health.data ? `OK · ${health.data.latencyMs} ms` : 'Checking connection…'}
       </Text>
     </View>
+    {__DEV__ && <Action title="Google sign-in spike" secondary onPress={() => router.push('/dev/google-spike')} />}
     <Action title="Server settings" secondary onPress={() => router.push('/settings')} />
   </Screen>;
 }
