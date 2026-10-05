@@ -1,0 +1,30 @@
+# Local environment (examples stay trackable at every depth)
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# Generated Expo projects and Android artifacts
+mobile/android/
+mobile/ios/
+mobile/.expo/
+mobile/dist/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Runtime and load test output
+loadtest/reports/
+backend/uploads/
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
