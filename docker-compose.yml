@@ -20,15 +20,6 @@ services:
     networks:
       - musicroom-network
 
-  mailpit:
-    image: axllent/mailpit
-    container_name: musicroom-mailpit
-    ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"
-      - "1025:1025"
-    networks:
-      - musicroom-network
-
   backend:
     build: ./backend
     container_name: musicroom-backend
@@ -38,8 +29,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mailpit:
-        condition: service_started
     volumes:
       - ./backend:/code
       - /code/node_modules
