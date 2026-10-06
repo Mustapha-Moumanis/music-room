@@ -16,7 +16,7 @@ export const testEnv = {
   PASSWORD_RESET_TTL: '15m',
   THROTTLE_TTL_MS: '60000',
   THROTTLE_LIMIT: '100',
-  AUTH_THROTTLE_LIMIT: '5',
+  AUTH_THROTTLE_LIMIT: '100',
   SMTP_HOST: 'localhost',
   SMTP_PORT: '1025',
   SMTP_USER: '',
