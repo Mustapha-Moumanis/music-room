@@ -1,10 +1,13 @@
 import { Body, Controller, Get, INestApplication, Post } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { ModulesContainer, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { IsString } from 'class-validator';
 import request from 'supertest';
 import { Server } from 'node:http';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
+import { IS_PUBLIC_KEY, Public } from '../src/core/auth/public.decorator';
 import { PrismaService } from '../src/core/database/prisma.service';
 
 class TestDto {
@@ -13,6 +16,7 @@ class TestDto {
 }
 
 @Controller('test')
+@Public()
 class TestController {
   @Post('validate')
   validate(@Body() dto: TestDto): { transformed: boolean } {
@@ -126,7 +130,7 @@ describe('Application setup (e2e)', () => {
         .set('X-App-Version', '1.0.0 (1)')
         .send({
           events: [
-            { action: 'screen_view', meta: { screen: 'home', password: 'super-secret' } },
+            { action: 'screen_view', meta: { screen: 'home', password: 'super-secret', refreshToken: 'refresh-token' } },
             { action: 'play', meta: { token: 'client-token', nested: { accessToken: 'access-token' } } },
           ],
         })
@@ -134,11 +138,86 @@ describe('Application setup (e2e)', () => {
 
       const rows = await waitForActionLogCount(prisma, 'CLIENT', 2);
       expect(rows).toHaveLength(2);
-      expect(JSON.stringify(rows.map((row) => row.meta))).not.toMatch(/super-secret|client-token|access-token/);
+      expect(JSON.stringify(rows.map((row) => row.meta))).not.toMatch(/super-secret|client-token|access-token|refresh-token/);
       expect(JSON.stringify(rows.map((row) => row.meta))).toContain('[Redacted]');
-      expect(written.join('')).not.toMatch(/super-secret|client-token|access-token/);
+      expect(written.join('')).not.toMatch(/super-secret|client-token|access-token|refresh-token/);
     } finally {
       stdout.mockRestore();
+    }
+  });
+
+  it('supports email/password registration, verified login, /auth/me, and refresh reuse revocation', async () => {
+    const email = `auth-${Date.now()}@example.com`;
+    const password = 'musicRoom42';
+    const registerBody = { message: 'If the address can be used, a verification email has been sent.' };
+
+    await request(server).post('/api/auth/register').send({ email: ` ${email.toUpperCase()} `, password, displayName: 'Auth User' })
+      .expect(201, registerBody);
+    await request(server).post('/api/auth/register').send({ email, password, displayName: 'Auth User' })
+      .expect(201, registerBody);
+
+    const unverified = await request(server).post('/api/auth/login').send({ email, password }).expect(403);
+    expect(unverified.body).toMatchObject({ statusCode: 403, code: 'EMAIL_NOT_VERIFIED', message: 'Email address is not verified.' });
+
+    const wrong = await request(server).post('/api/auth/login').send({ email, password: 'wrongPassword1' }).expect(401);
+    const unknown = await request(server).post('/api/auth/login').send({ email: `unknown-${email}`, password: 'wrongPassword1' }).expect(401);
+    expect(stripVolatileError(wrong.body)).toEqual(stripVolatileError(unknown.body));
+    expect(wrong.body).toMatchObject({ statusCode: 401, code: 'INVALID_CREDENTIALS' });
+
+    await prisma.user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
+    const login = await request(server).post('/api/auth/login').send({ email, password }).expect(200);
+    expect(login.body).toMatchObject({
+      accessToken: expect.any(String),
+      accessTokenExpiresIn: 900,
+      refreshToken: expect.any(String),
+      refreshTokenExpiresAt: expect.any(String),
+      user: { email, displayName: 'Auth User' },
+    });
+
+    await request(server).get('/api/auth/me').expect(401);
+    const me = await request(server).get('/api/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(200);
+    expect(me.body).toMatchObject({ email, displayName: 'Auth User', emailVerified: true });
+    const meLog = await waitForActionLog(prisma, { kind: 'HTTP', route: '/api/auth/me' });
+    expect(meLog.userId).toBe(login.body.user.id);
+
+    const refresh = await request(server).post('/api/auth/refresh').send({ refreshToken: login.body.refreshToken }).expect(200);
+    expect(refresh.body.refreshToken).not.toBe(login.body.refreshToken);
+    await request(server).get('/api/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(200);
+
+    const replay = await request(server).post('/api/auth/refresh').send({ refreshToken: login.body.refreshToken }).expect(401);
+    expect(replay.body).toMatchObject({ code: 'REFRESH_TOKEN_REUSED' });
+    const newestFails = await request(server).post('/api/auth/refresh').send({ refreshToken: refresh.body.refreshToken }).expect(401);
+    expect(newestFails.body).toMatchObject({ code: 'REFRESH_TOKEN_REUSED' });
+    const revokedAccess = await request(server).get('/api/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(401);
+    expect(revokedAccess.body).toMatchObject({ code: 'SESSION_REVOKED' });
+
+    // The client still sends its revoked access token; public routes must not be blocked by it.
+    const relogin = await request(server).post('/api/auth/login')
+      .set('Authorization', `Bearer ${login.body.accessToken}`).send({ email, password }).expect(200);
+    await request(server).get('/api/auth/me').set('Authorization', `Bearer ${relogin.body.accessToken}`).expect(200);
+  });
+
+  it('rejects a weak password at registration with the policy message', async () => {
+    const weak = await request(server).post('/api/auth/register')
+      .send({ email: `weak-${Date.now()}@example.com`, password: 'short', displayName: 'Weak' }).expect(400);
+    expect(JSON.stringify(weak.body.message)).toContain('password must be 10-128 chars');
+  });
+
+  it('allows only one concurrent refresh with the same token', async () => {
+    const { refreshToken } = await createVerifiedSession(prisma, server, `race-${Date.now()}@example.com`);
+    const results = await Promise.all([
+      request(server).post('/api/auth/refresh').send({ refreshToken }),
+      request(server).post('/api/auth/refresh').send({ refreshToken }),
+    ]);
+    expect(results.map((response) => response.status).sort()).toEqual([200, 401]);
+    expect(results.find((response) => response.status === 401)?.body.code).toBe('REFRESH_TOKEN_REUSED');
+  });
+
+  it('rejects every discovered non-public route without a bearer token', async () => {
+    const protectedRoutes = discoverControllerRoutes(app).filter((route) => !route.isPublic);
+    expect(protectedRoutes.map((route) => `${route.method} ${route.path}`)).toContain('GET /api/auth/me');
+    for (const route of protectedRoutes) {
+      await request(server)[route.method.toLowerCase() as 'get' | 'post'](route.path).send({}).expect(401);
     }
   });
 
@@ -156,16 +235,75 @@ describe('Application setup (e2e)', () => {
   });
 });
 
-async function waitForActionLog(prisma: PrismaService, where: { kind: 'HTTP' | 'CLIENT' | 'SOCKET' }) {
-  const rows = await waitForActionLogCount(prisma, where.kind, 1);
+async function waitForActionLog(prisma: PrismaService, where: { kind: 'HTTP' | 'CLIENT' | 'SOCKET'; route?: string }) {
+  const rows = await waitForActionLogCount(prisma, where.kind, 1, where.route);
   return rows[0];
 }
 
-async function waitForActionLogCount(prisma: PrismaService, kind: 'HTTP' | 'CLIENT' | 'SOCKET', count: number) {
+async function waitForActionLogCount(prisma: PrismaService, kind: 'HTTP' | 'CLIENT' | 'SOCKET', count: number, route?: string) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const rows = await prisma.actionLog.findMany({ where: { kind }, orderBy: { id: 'desc' } });
+    const rows = await prisma.actionLog.findMany({ where: { kind, route }, orderBy: { id: 'desc' } });
     if (rows.length >= count) return rows;
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  return prisma.actionLog.findMany({ where: { kind }, orderBy: { id: 'desc' } });
+  return prisma.actionLog.findMany({ where: { kind, route }, orderBy: { id: 'desc' } });
+}
+
+function stripVolatileError(body: Record<string, unknown>): Record<string, unknown> {
+  const stable = { ...body };
+  delete stable.timestamp;
+  return stable;
+}
+
+async function createVerifiedSession(prisma: PrismaService, server: Server, email: string) {
+  const password = 'musicRoom42';
+  await request(server).post('/api/auth/register').send({ email, password, displayName: 'Race User' }).expect(201);
+  await prisma.user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
+  const login = await request(server).post('/api/auth/login').send({ email, password }).expect(200);
+  return login.body as { accessToken: string; refreshToken: string; user: { id: string } };
+}
+
+interface DiscoveredRoute {
+  method: 'GET' | 'POST';
+  path: string;
+  isPublic: boolean;
+}
+
+function discoverControllerRoutes(app: INestApplication): DiscoveredRoute[] {
+  const modules = app.get(ModulesContainer);
+  const reflector = app.get(Reflector);
+  const routes: DiscoveredRoute[] = [];
+  for (const moduleRef of modules.values()) {
+    for (const wrapper of moduleRef.controllers.values()) {
+      const instance = wrapper.instance as object | undefined;
+      if (!instance) continue;
+      const controller = instance.constructor;
+      const controllerPath = pathValue(Reflect.getMetadata(PATH_METADATA, controller));
+      const controllerPublic = reflector.get<boolean>(IS_PUBLIC_KEY, controller) ?? false;
+      for (const property of Object.getOwnPropertyNames(Object.getPrototypeOf(instance))) {
+        if (property === 'constructor') continue;
+        const handler = (instance as Record<string, unknown>)[property];
+        if (typeof handler !== 'function') continue;
+        const routePath = pathValue(Reflect.getMetadata(PATH_METADATA, handler));
+        const method = Reflect.getMetadata(METHOD_METADATA, handler) as number | undefined;
+        if (routePath === undefined || method === undefined) continue;
+        if (method !== 0 && method !== 1) continue;
+        routes.push({
+          method: method === 0 ? 'GET' : 'POST',
+          path: joinApiPath(controllerPath, routePath),
+          isPublic: reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [handler, controller]) ?? controllerPublic,
+        });
+      }
+    }
+  }
+  return routes;
+}
+
+function pathValue(value: unknown): string | undefined {
+  if (Array.isArray(value)) return String(value[0] ?? '');
+  return typeof value === 'string' ? value : undefined;
+}
+
+function joinApiPath(controllerPath = '', routePath = ''): string {
+  return `/${['api', controllerPath, routePath].filter(Boolean).join('/')}`.replace(/\/+/g, '/');
 }

@@ -13,6 +13,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const statusCode = exception instanceof HttpException
       ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
+    let code: unknown;
     if (exception instanceof HttpException) {
       const body = exception.getResponse();
       if (typeof body === 'string') message = body;
@@ -22,6 +23,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           (Array.isArray(candidate) && candidate.every((item: unknown) => typeof item === 'string'))) {
           message = candidate as string | string[];
         }
+        if ('code' in body && typeof body.code === 'string') code = body.code;
       }
     } else {
       this.logger.error('Unhandled exception', exception instanceof Error ? exception.stack : String(exception));
@@ -29,6 +31,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(statusCode).json({
       statusCode,
       error: STATUS_CODES[statusCode] ?? 'Error',
+      ...(typeof code === 'string' ? { code } : {}),
       message,
       path: request.originalUrl,
       timestamp: new Date().toISOString(),
