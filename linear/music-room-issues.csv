@@ -15,16 +15,17 @@
 **Size:** S  ·  **Critical path**
 
 Part of **M0 — Foundations**.","Backlog","Urgent","Music Room","infra","M0 — Foundations","","MCH-121"
-"MCH-79","[M0] docker-compose: postgres + mailpit + backend","Local stack for dev and defense.
+"MCH-79","[M0] docker-compose: postgres + backend with SMTP","Local stack for dev and defense.
 
 **Scope**
 - Postgres 16 with a named volume.
-- Mailpit (SMTP catcher + web UI) so verification/reset mails are visible during the demo.
+- Authenticated SMTP delivery through the configured noreply account.
 - Backend service in watch mode; healthchecks.
 
 **Acceptance criteria**
-- [ ] `make up` starts all three; Mailpit UI reachable on :8025.
+- [ ] `make up` starts Postgres and the backend.
 - [ ] Backend waits for a healthy DB before starting.
+- [ ] Verification/reset messages are sent through the SMTP account configured in `.env`.
 
 **Size:** S  ·  **Blocked by:** MCH-78
 
@@ -140,7 +141,7 @@ Part of **M1 — Auth & Accounts (V.1)**.","Backlog","Urgent","Music Room","back
 - `POST /auth/verify/resend` (throttled).
 
 **Acceptance criteria**
-- [ ] Mail shows up in Mailpit; link verifies once; expired/reused token → error page.
+- [ ] Mail arrives at the recipient; link verifies once; expired/reused token → error page.
 - [ ] Verified user can log in.
 
 **Size:** S  ·  **Blocked by:** MCH-86, MCH-79
@@ -205,7 +206,7 @@ Part of **M1 — Auth & Accounts (V.1)**.","Backlog","High","Music Room","backen
 - Auth-gated routing; silent refresh in the axios interceptor with a single in-flight refresh.
 
 **Acceptance criteria**
-- [ ] Register → verify via Mailpit → login → reset → logout works on a physical device.
+- [ ] Register → verify via delivered email → login → reset → logout works on a physical device.
 - [ ] Killing and reopening the app keeps the session.
 
 **Size:** M  ·  **Blocked by:** MCH-83, MCH-86, MCH-87, MCH-88
