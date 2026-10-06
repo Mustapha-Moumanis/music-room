@@ -26,10 +26,11 @@ export class MailService {
     if (this.config.get('NODE_ENV') === 'test') return;
     const user = this.config.get('SMTP_USER');
     const pass = this.config.get('SMTP_PASSWORD');
+    const port = this.config.get('SMTP_PORT');
     this.transporter = nodemailer.createTransport({
       host: this.config.get('SMTP_HOST'),
-      port: this.config.get('SMTP_PORT'),
-      secure: false,
+      port,
+      secure: port === 465,
       auth: user && pass ? { user, pass } : undefined,
     });
   }

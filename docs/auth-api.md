@@ -68,7 +68,8 @@ Public unless marked 🔒 (needs `Authorization: Bearer <accessToken>`).
   mail links to `${APP_URL}/api/auth/verify?token=…`.
 * Reset code: 6 digits, stored hashed, 15 min, 5 wrong attempts invalidate it;
   requesting a new code invalidates the previous one.
-* Mail is sent through SMTP (Mailpit in development: UI on `http://localhost:8025`).
+* Mail is sent through the authenticated SMTP account configured with
+  `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, and `MAIL_FROM`.
 * Google: the idToken audience must be `GOOGLE_WEB_CLIENT_ID`. A Google email that
   already belongs to a local account is refused with `ACCOUNT_EXISTS_LINK_REQUIRED`
   (log in with the password, then link from settings). No silent auto-linking.

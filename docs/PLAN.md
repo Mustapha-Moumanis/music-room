@@ -19,7 +19,7 @@ Ticket source of truth: `linear/music-room-issues.csv` (52 tickets).
 | Realtime | **Socket.IO** (`@nestjs/websockets`) | Rooms, reconnects, and an Artillery engine for the ramp-up test. |
 | Auth | Own JWT access (15 min) + rotating refresh tokens, argon2id, `@nestjs/throttler` | Covers brute force and session theft (V.6). |
 | Social login | **Google only** (`@react-native-google-signin` → `google-auth-library` on the server) | The subject says Facebook *or* Google. Facebook app review is slower. |
-| Mail | Nodemailer → **Mailpit** in docker | Verification and reset mails show up live during the defense. |
+| Mail | Nodemailer → authenticated **SMTP noreply account** | Verification and reset mails are delivered to the recipient. |
 | Music | **Deezer public API** (proxied by the backend) + 30 s previews | No key, no user OAuth, no Premium needed (Spotify needs all three). It supplies data only, so "the SDK must not do your work" holds. |
 | Mobile | **React Native via Expo** (dev client), **Android only** | The subject allows Android *or* iOS. Android needs no Apple account and you can sideload an APK. |
 | Mobile libs | expo-router, TanStack Query, Zustand, axios, socket.io-client, expo-secure-store, expo-audio, expo-location, react-native-draggable-flatlist | Standard, well documented. |
@@ -90,7 +90,7 @@ Ticket source of truth: `linear/music-room-issues.csv` (52 tickets).
 | Milestone | Outcome (✅ = exit check) |
 |---|---|
 | **M0 — Foundations** | ✅ `make install up` on a fresh clone. The app on a phone reaches the backend through a configurable URL. Google idToken verified (risk removed). CI green. |
-| **M1 — Auth & Accounts** (V.1) | ✅ register → verify (Mailpit) → login → reset → logout; Google sign-in plus linking. |
+| **M1 — Auth & Accounts** (V.1) | ✅ register → verify by email → login → reset → logout; Google sign-in plus linking. |
 | **M2 — Profile & Friends** (V.1) | ✅ Stranger, friend and self each see the right profile fields. |
 | **M3 — Music Core & Realtime** | ✅ Search Deezer through the backend, play a preview, receive live room updates. |
 | **M4 — Music Track Vote** (V.2.1) | ✅ Two phones vote live. All 3 license modes and both visibilities work. The parallel-vote e2e test passes. **First demo-able service.** |
@@ -112,7 +112,7 @@ Sizes: S ≈ ½ day, M ≈ 1–2 days, L ≈ 3 days. Priority: **Urgent = critic
 | ID | Ticket | Size | Prio | Blocked by |
 |---|---|---|---|---|
 | MCH-78 | Monorepo + Makefile + env hygiene | S | Urgent | — |
-| MCH-79 | docker-compose: postgres + mailpit + backend | S | High | MCH-78 |
+| MCH-79 | docker-compose: postgres + backend with SMTP | S | High | MCH-78 |
 | MCH-80 | NestJS bootstrap + global pipes/filters + Swagger | S | Urgent | MCH-78 |
 | MCH-81 | Prisma schema v1 + migrations | M | Urgent | MCH-79, MCH-80 |
 | MCH-82 | Action logging (platform / device / app version) | M | High | MCH-80, MCH-81 |
@@ -254,7 +254,7 @@ Rules: nothing from M9/M10 starts before MCH-119 passes. Each milestone ends wit
 
 - [ ] Fresh clone → `make install up seed` works. No `.env` or secret in git history.
 - [ ] App: set the backend URL in Settings → health OK.
-- [ ] Register with mail/password → login blocked → verify link in Mailpit → login OK.
+- [ ] Register with mail/password → login blocked → verify the delivered email link → login OK.
 - [ ] Forgot password → code by mail → reset → old sessions are logged out.
 - [ ] Sign up with Google; link Google to an existing mail account; log in with both methods.
 - [ ] Profile: edit public / friends-only / private / music preferences. A stranger, a friend and self each see the right fields.
