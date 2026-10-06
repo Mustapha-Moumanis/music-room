@@ -1,8 +1,11 @@
 import { HttpStatus } from '@nestjs/common';
 import { TokenService } from '../../core/auth/token.service';
+import { AppConfigService } from '../../core/config/app-config.service';
 import { PrismaService } from '../../core/database/prisma.service';
+import { MailService } from '../../core/mail/mail.service';
 import { AuthService } from './auth.service';
 import { EmailVerificationNotifier } from './email-verification-notifier';
+import { GoogleIdTokenVerifier } from './google-id-token.verifier';
 
 describe('AuthService refresh rotation', () => {
   const req = { headers: { 'user-agent': 'jest', 'x-device': 'unit' }, ip: '127.0.0.1' } as never;
@@ -25,7 +28,7 @@ describe('AuthService refresh rotation', () => {
   it('rotates an active refresh token in one transaction', async () => {
     const tx = transactionClient({ replacedById: null, revokedAt: null });
     const prisma = prismaWithTransaction(tx);
-    const service = new AuthService(prisma, tokens as unknown as TokenService, notifier());
+    const service = new AuthService(prisma, tokens as unknown as TokenService, notifier(), config(), mail(), googleVerifier());
 
     await expect(service.refresh('old-id.secret', req)).resolves.toEqual({
       accessToken: 'access',
@@ -39,7 +42,7 @@ describe('AuthService refresh rotation', () => {
 
   it('revokes the family when a rotated token is reused', async () => {
     const tx = transactionClient({ replacedById: 'new-id', revokedAt: null });
-    const service = new AuthService(prismaWithTransaction(tx), tokens as unknown as TokenService, notifier());
+    const service = new AuthService(prismaWithTransaction(tx), tokens as unknown as TokenService, notifier(), config(), mail(), googleVerifier());
 
     await expect(service.refresh('old-id.secret', req)).rejects.toMatchObject({
       status: HttpStatus.UNAUTHORIZED,
@@ -79,4 +82,16 @@ function prismaWithTransaction(tx: ReturnType<typeof transactionClient>): Prisma
 
 function notifier(): EmailVerificationNotifier {
   return { notify: jest.fn() } as unknown as EmailVerificationNotifier;
+}
+
+function config(): AppConfigService {
+  return { get: jest.fn() } as unknown as AppConfigService;
+}
+
+function mail(): MailService {
+  return { send: jest.fn() } as unknown as MailService;
+}
+
+function googleVerifier(): GoogleIdTokenVerifier {
+  return { verify: jest.fn() } as unknown as GoogleIdTokenVerifier;
 }
