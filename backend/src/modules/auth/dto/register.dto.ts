@@ -6,9 +6,9 @@ import {
 import { normalizeEmail, validatePasswordPolicy } from '../password-policy';
 
 @ValidatorConstraint({ name: 'PasswordPolicyValidator', async: false })
-class PasswordPolicyValidator implements ValidatorConstraintInterface {
+export class PasswordPolicyValidator implements ValidatorConstraintInterface {
   validate(password: unknown, args?: ValidationArguments): boolean {
-    const dto = args?.object as Partial<RegisterDto> | undefined;
+    const dto = args?.object as Partial<RegisterDto> & { newPassword?: string } | undefined;
     return typeof password === 'string' && validatePasswordPolicy(password, dto?.email ?? '');
   }
 
@@ -18,7 +18,7 @@ class PasswordPolicyValidator implements ValidatorConstraintInterface {
 }
 
 export class RegisterDto {
-  @ApiProperty({ example: 'hajar@example.com' })
+  @ApiProperty({ example: 'john@example.com' })
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? normalizeEmail(value) : value)
   @IsEmail()
   email!: string;
@@ -30,7 +30,7 @@ export class RegisterDto {
   @Validate(PasswordPolicyValidator)
   password!: string;
 
-  @ApiProperty({ example: 'Hajar', minLength: 1, maxLength: 80 })
+  @ApiProperty({ example: 'john', minLength: 1, maxLength: 80 })
   @IsString()
   @MinLength(1)
   @MaxLength(80)

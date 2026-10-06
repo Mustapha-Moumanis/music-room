@@ -9,6 +9,9 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { IS_PUBLIC_KEY, Public } from '../src/core/auth/public.decorator';
 import { PrismaService } from '../src/core/database/prisma.service';
+import { MailService } from '../src/core/mail/mail.service';
+import { hashToken } from '../src/modules/auth/email-verification-notifier';
+import { GoogleIdTokenVerificationError, GoogleIdTokenVerifier } from '../src/modules/auth/google-id-token.verifier';
 
 class TestDto {
   @IsString()
@@ -33,22 +36,27 @@ describe('Application setup (e2e)', () => {
   let app: INestApplication;
   let server: Server;
   let prisma: PrismaService;
+  let mail: MailService;
+  const googleVerifier = { verify: jest.fn() };
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       imports: [AppModule], controllers: [TestController],
-    }).compile();
+    }).overrideProvider(GoogleIdTokenVerifier).useValue(googleVerifier).compile();
     app = module.createNestApplication({ logger: false });
     configureApp(app);
     await app.init();
     server = app.getHttpServer() as Server;
     prisma = app.get(PrismaService);
+    mail = app.get(MailService);
   });
 
   afterAll(async () => { await app?.close(); });
 
   beforeEach(async () => {
     await prisma.actionLog.deleteMany();
+    mail.clearSentMail();
+    googleVerifier.verify.mockReset();
   });
 
   it('serves health without an Origin header (native mobile)', async () => {
@@ -164,7 +172,12 @@ describe('Application setup (e2e)', () => {
     expect(stripVolatileError(wrong.body)).toEqual(stripVolatileError(unknown.body));
     expect(wrong.body).toMatchObject({ statusCode: 401, code: 'INVALID_CREDENTIALS' });
 
-    await prisma.user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
+    const verifyLink = extractVerifyLink(mail.getSentMail()[0].text);
+    const verify = await request(server).get(verifyLink).expect(200).expect('Content-Type', /html/);
+    expect(verify.text).toContain('Email verified');
+    const secondClick = await request(server).get(verifyLink).expect(400).expect('Content-Type', /html/);
+    expect(secondClick.text).toContain('invalid, expired, or has already been used');
+
     const login = await request(server).post('/api/auth/login').send({ email, password }).expect(200);
     expect(login.body).toMatchObject({
       accessToken: expect.any(String),
@@ -176,7 +189,7 @@ describe('Application setup (e2e)', () => {
 
     await request(server).get('/api/auth/me').expect(401);
     const me = await request(server).get('/api/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(200);
-    expect(me.body).toMatchObject({ email, displayName: 'Auth User', emailVerified: true });
+    expect(me.body).toMatchObject({ email, displayName: 'Auth User', emailVerified: true, hasPassword: true, providers: ['LOCAL'] });
     const meLog = await waitForActionLog(prisma, { kind: 'HTTP', route: '/api/auth/me' });
     expect(meLog.userId).toBe(login.body.user.id);
 
@@ -195,6 +208,159 @@ describe('Application setup (e2e)', () => {
     const relogin = await request(server).post('/api/auth/login')
       .set('Authorization', `Bearer ${login.body.accessToken}`).send({ email, password }).expect(200);
     await request(server).get('/api/auth/me').set('Authorization', `Bearer ${relogin.body.accessToken}`).expect(200);
+  });
+
+  it('returns HTML errors for expired verification tokens and resends only for unverified local accounts', async () => {
+    const email = `verify-${Date.now()}@example.com`;
+    const password = 'musicRoom42';
+    await request(server).post('/api/auth/register').send({ email, password, displayName: 'Verify User' }).expect(201);
+    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+    const expired = 'expired-verification-token';
+    await prisma.emailToken.create({
+      data: {
+        userId: user.id,
+        type: 'VERIFY_EMAIL',
+        tokenHash: hashToken(expired),
+        expiresAt: new Date(Date.now() - 1000),
+      },
+    });
+    const expiredResponse = await request(server).get(`/api/auth/verify?token=${expired}`).expect(400).expect('Content-Type', /html/);
+    expect(expiredResponse.text).toContain('invalid, expired, or has already been used');
+
+    mail.clearSentMail();
+    await request(server).post('/api/auth/verify/resend').send({ email: `missing-${email}` }).expect(202);
+    expect(mail.getSentMail()).toHaveLength(0);
+    await request(server).post('/api/auth/verify/resend').send({ email }).expect(202);
+    expect(mail.getSentMail()).toHaveLength(1);
+    const verifyLink = extractVerifyLink(mail.getSentMail()[0].text);
+    await request(server).get(verifyLink).expect(200);
+    mail.clearSentMail();
+    await request(server).post('/api/auth/verify/resend').send({ email }).expect(202);
+    expect(mail.getSentMail()).toHaveLength(0);
+  });
+
+  it('handles forgot/reset password codes, attempt invalidation, and revokes existing sessions', async () => {
+    const email = `reset-${Date.now()}@example.com`;
+    const oldPassword = 'musicRoom42';
+    const newPassword = 'newMusicRoom42';
+    await request(server).post('/api/auth/password/forgot').send({ email: `missing-${email}` }).expect(200);
+    expect(mail.getSentMail()).toHaveLength(0);
+
+    const session = await createVerifiedSession(prisma, server, email, oldPassword);
+    mail.clearSentMail();
+    await request(server).post('/api/auth/password/forgot').send({ email }).expect(200);
+    expect(mail.getSentMail()).toHaveLength(1);
+    const firstCode = extractResetCode(mail.getSentMail()[0].text);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const response = await request(server).post('/api/auth/password/reset')
+        .send({ email, code: '000000', newPassword }).expect(400);
+      expect(response.body).toMatchObject({ code: 'INVALID_RESET_CODE' });
+    }
+    const afterLockout = await request(server).post('/api/auth/password/reset')
+      .send({ email, code: firstCode, newPassword }).expect(400);
+    expect(afterLockout.body).toMatchObject({ code: 'INVALID_RESET_CODE' });
+
+    mail.clearSentMail();
+    await request(server).post('/api/auth/password/forgot').send({ email }).expect(200);
+    const secondCode = extractResetCode(mail.getSentMail()[0].text);
+    await request(server).post('/api/auth/password/reset').send({ email, code: secondCode, newPassword }).expect(200);
+    await request(server).post('/api/auth/refresh').send({ refreshToken: session.refreshToken }).expect(401);
+    const oldAccess = await request(server).get('/api/auth/me').set('Authorization', `Bearer ${session.accessToken}`).expect(401);
+    expect(oldAccess.body).toMatchObject({ code: 'SESSION_REVOKED' });
+    await request(server).post('/api/auth/login').send({ email, password: oldPassword }).expect(401);
+    await request(server).post('/api/auth/login').send({ email, password: newPassword }).expect(200);
+  });
+
+  it('caps reset-code guesses even when they arrive in parallel', async () => {
+    const email = `reset-race-${Date.now()}@example.com`;
+    await createVerifiedSession(prisma, server, email);
+    mail.clearSentMail();
+    await request(server).post('/api/auth/password/forgot').send({ email }).expect(200);
+    const code = extractResetCode(mail.getSentMail()[0].text);
+    const wrong = code === '000000' ? '111111' : '000000';
+    const burst = await Promise.all(Array.from({ length: 8 }, () =>
+      request(server).post('/api/auth/password/reset').send({ email, code: wrong, newPassword: 'raceMusicRoom42' })));
+    expect(burst.every((response) => response.status === 400)).toBe(true);
+    const token = await prisma.emailToken.findFirstOrThrow({
+      where: { user: { email }, type: 'RESET_PASSWORD' }, orderBy: { createdAt: 'desc' },
+    });
+    expect(token.attempts).toBeLessThanOrEqual(5);
+    await request(server).post('/api/auth/password/reset').send({ email, code, newPassword: 'raceMusicRoom42' }).expect(400);
+  });
+
+  it('logs out one refresh-token family and all sessions', async () => {
+    const email = `logout-${Date.now()}@example.com`;
+    const first = await createVerifiedSession(prisma, server, email);
+    await request(server).post('/api/auth/logout').send({ refreshToken: first.refreshToken }).expect(204);
+    await request(server).post('/api/auth/logout').send({ refreshToken: 'unknown.bad' }).expect(204);
+    await request(server).post('/api/auth/refresh').send({ refreshToken: first.refreshToken }).expect(401);
+
+    const second = await request(server).post('/api/auth/login').send({ email, password: 'musicRoom42' }).expect(200);
+    const third = await request(server).post('/api/auth/login').send({ email, password: 'musicRoom42' }).expect(200);
+    await request(server).post('/api/auth/logout-all').set('Authorization', `Bearer ${second.body.accessToken}`).send({}).expect(204);
+    await request(server).post('/api/auth/refresh').send({ refreshToken: second.body.refreshToken }).expect(401);
+    await request(server).post('/api/auth/refresh').send({ refreshToken: third.body.refreshToken }).expect(401);
+  });
+
+  it('supports Google sign-in contract branches', async () => {
+    const googleEmail = `google-${Date.now()}@example.com`;
+    googleVerifier.verify.mockResolvedValue({ sub: 'google-sub-1', email: googleEmail, name: 'Google User' });
+    const created = await request(server).post('/api/auth/google').send({ idToken: 'google-1' }).expect(200);
+    expect(created.body.user).toMatchObject({ email: googleEmail, displayName: 'Google User' });
+    const me = await request(server).get('/api/auth/me').set('Authorization', `Bearer ${created.body.accessToken}`).expect(200);
+    expect(me.body).toMatchObject({ email: googleEmail, hasPassword: false, providers: ['GOOGLE'] });
+    const same = await request(server).post('/api/auth/google').send({ idToken: 'google-1-again' }).expect(200);
+    expect(same.body.user.id).toBe(created.body.user.id);
+
+    const localEmail = `google-local-${Date.now()}@example.com`;
+    await request(server).post('/api/auth/register').send({ email: localEmail, password: 'musicRoom42', displayName: 'Local' }).expect(201);
+    googleVerifier.verify.mockResolvedValueOnce({ sub: 'google-sub-2', email: localEmail, name: 'Local Google' });
+    const conflict = await request(server).post('/api/auth/google').send({ idToken: 'email-conflict' }).expect(409);
+    expect(conflict.body).toMatchObject({ code: 'ACCOUNT_EXISTS_LINK_REQUIRED' });
+
+    googleVerifier.verify.mockRejectedValueOnce(new GoogleIdTokenVerificationError('bad', 'invalid_token'));
+    const invalid = await request(server).post('/api/auth/google').send({ idToken: 'bad' }).expect(401);
+    expect(invalid.body).toMatchObject({ code: 'INVALID_GOOGLE_TOKEN' });
+
+    await request(server).post('/api/auth/login').send({ email: googleEmail, password: 'anything12345' }).expect(401);
+  });
+
+  it('links and unlinks Google accounts', async () => {
+    const email = `link-${Date.now()}@example.com`;
+    const local = await createVerifiedSession(prisma, server, email);
+    googleVerifier.verify.mockResolvedValue({ sub: 'link-sub-1', email: `different-${email}`, name: 'Linked' });
+    const linked = await request(server).post('/api/auth/link/google')
+      .set('Authorization', `Bearer ${local.accessToken}`).send({ idToken: 'link-1' }).expect(200);
+    expect(linked.body.providers).toEqual(['GOOGLE', 'LOCAL']);
+    const idempotent = await request(server).post('/api/auth/link/google')
+      .set('Authorization', `Bearer ${local.accessToken}`).send({ idToken: 'link-1' }).expect(200);
+    expect(idempotent.body.providers).toEqual(['GOOGLE', 'LOCAL']);
+    googleVerifier.verify.mockResolvedValueOnce({ sub: 'link-sub-second', email: `second-${email}`, name: 'Second' });
+    const secondGoogle = await request(server).post('/api/auth/link/google')
+      .set('Authorization', `Bearer ${local.accessToken}`).send({ idToken: 'link-second' }).expect(409);
+    expect(secondGoogle.body).toMatchObject({ code: 'GOOGLE_ALREADY_LINKED' });
+    const googleLogin = await request(server).post('/api/auth/google').send({ idToken: 'link-1' }).expect(200);
+    expect(googleLogin.body.user.id).toBe(local.user.id);
+
+    googleVerifier.verify.mockResolvedValueOnce({ sub: 'owned-by-google-user', email: `owner-${email}`, name: 'Owner' });
+    await request(server).post('/api/auth/google').send({ idToken: 'owner' }).expect(200);
+    googleVerifier.verify.mockResolvedValueOnce({ sub: 'owned-by-google-user', email: `owner-${email}`, name: 'Owner' });
+    const alreadyLinked = await request(server).post('/api/auth/link/google')
+      .set('Authorization', `Bearer ${local.accessToken}`).send({ idToken: 'owner' }).expect(409);
+    expect(alreadyLinked.body).toMatchObject({ code: 'GOOGLE_ALREADY_LINKED' });
+
+    const unlinked = await request(server).delete('/api/auth/link/google')
+      .set('Authorization', `Bearer ${local.accessToken}`).send({}).expect(200);
+    expect(unlinked.body.providers).toEqual(['LOCAL']);
+    const missing = await request(server).delete('/api/auth/link/google')
+      .set('Authorization', `Bearer ${local.accessToken}`).send({}).expect(404);
+    expect(missing.body).toMatchObject({ code: 'GOOGLE_NOT_LINKED' });
+
+    googleVerifier.verify.mockResolvedValueOnce({ sub: 'google-only-unlink', email: `google-only-${email}`, name: 'Google Only' });
+    const googleOnly = await request(server).post('/api/auth/google').send({ idToken: 'google-only' }).expect(200);
+    const passwordRequired = await request(server).delete('/api/auth/link/google')
+      .set('Authorization', `Bearer ${googleOnly.body.accessToken}`).send({}).expect(400);
+    expect(passwordRequired.body).toMatchObject({ code: 'PASSWORD_REQUIRED_TO_UNLINK' });
   });
 
   it('rejects a weak password at registration with the policy message', async () => {
@@ -217,7 +383,7 @@ describe('Application setup (e2e)', () => {
     const protectedRoutes = discoverControllerRoutes(app).filter((route) => !route.isPublic);
     expect(protectedRoutes.map((route) => `${route.method} ${route.path}`)).toContain('GET /api/auth/me');
     for (const route of protectedRoutes) {
-      await request(server)[route.method.toLowerCase() as 'get' | 'post'](route.path).send({}).expect(401);
+      await request(server)[route.method.toLowerCase() as 'get' | 'post' | 'delete'](route.path).send({}).expect(401);
     }
   });
 
@@ -255,16 +421,27 @@ function stripVolatileError(body: Record<string, unknown>): Record<string, unkno
   return stable;
 }
 
-async function createVerifiedSession(prisma: PrismaService, server: Server, email: string) {
-  const password = 'musicRoom42';
+async function createVerifiedSession(prisma: PrismaService, server: Server, email: string, password = 'musicRoom42') {
   await request(server).post('/api/auth/register').send({ email, password, displayName: 'Race User' }).expect(201);
   await prisma.user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
   const login = await request(server).post('/api/auth/login').send({ email, password }).expect(200);
   return login.body as { accessToken: string; refreshToken: string; user: { id: string } };
 }
 
+function extractVerifyLink(text: string): string {
+  const match = text.match(/http:\/\/localhost:3000(\/api\/auth\/verify\?token=[A-Za-z0-9_-]+)/);
+  if (!match) throw new Error(`No verification link found in ${text}`);
+  return match[1];
+}
+
+function extractResetCode(text: string): string {
+  const match = text.match(/\b(\d{6})\b/);
+  if (!match) throw new Error(`No reset code found in ${text}`);
+  return match[1];
+}
+
 interface DiscoveredRoute {
-  method: 'GET' | 'POST';
+  method: 'GET' | 'POST' | 'DELETE';
   path: string;
   isPublic: boolean;
 }
@@ -287,9 +464,9 @@ function discoverControllerRoutes(app: INestApplication): DiscoveredRoute[] {
         const routePath = pathValue(Reflect.getMetadata(PATH_METADATA, handler));
         const method = Reflect.getMetadata(METHOD_METADATA, handler) as number | undefined;
         if (routePath === undefined || method === undefined) continue;
-        if (method !== 0 && method !== 1) continue;
+        if (method !== 0 && method !== 1 && method !== 3) continue;
         routes.push({
-          method: method === 0 ? 'GET' : 'POST',
+          method: method === 0 ? 'GET' : method === 1 ? 'POST' : 'DELETE',
           path: joinApiPath(controllerPath, routePath),
           isPublic: reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [handler, controller]) ?? controllerPublic,
         });

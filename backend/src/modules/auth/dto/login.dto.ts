@@ -4,7 +4,7 @@ import { IsEmail, IsString } from 'class-validator';
 import { normalizeEmail } from '../password-policy';
 
 export class LoginDto {
-  @ApiProperty({ example: 'hajar@example.com' })
+  @ApiProperty({ example: 'john@example.com' })
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? normalizeEmail(value) : value)
   @IsEmail()
   email!: string;
