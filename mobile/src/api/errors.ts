@@ -1,6 +1,23 @@
 import { isAxiosError } from 'axios';
 
-export type ApiErrorCode = 'NETWORK' | 'TIMEOUT' | 'HTTP' | 'INVALID_RESPONSE' | 'UNKNOWN';
+export type ApiErrorCode =
+  | 'NETWORK'
+  | 'TIMEOUT'
+  | 'HTTP'
+  | 'INVALID_RESPONSE'
+  | 'UNKNOWN'
+  | 'INVALID_CREDENTIALS'
+  | 'EMAIL_NOT_VERIFIED'
+  | 'INVALID_REFRESH_TOKEN'
+  | 'REFRESH_TOKEN_REUSED'
+  | 'UNAUTHORIZED'
+  | 'SESSION_REVOKED'
+  | 'INVALID_RESET_CODE'
+  | 'INVALID_GOOGLE_TOKEN'
+  | 'ACCOUNT_EXISTS_LINK_REQUIRED'
+  | 'GOOGLE_ALREADY_LINKED'
+  | 'PASSWORD_REQUIRED_TO_UNLINK'
+  | 'GOOGLE_NOT_LINKED';
 
 export class ApiError extends Error {
   constructor(
@@ -23,7 +40,11 @@ export function toApiError(error: unknown, origin?: string, endpoint?: string): 
     }
     if (error.response) {
       const status = error.response.status;
-      return new ApiError('HTTP', `Reached server but ${endpoint ?? 'the request'} returned ${status}`, status, error);
+      const data = error.response.data;
+      const code = typeof data === 'object' && data !== null && 'code' in data && typeof data.code === 'string'
+        ? data.code as ApiErrorCode
+        : 'HTTP';
+      return new ApiError(code, `Reached server but ${endpoint ?? 'the request'} returned ${status}`, status, error);
     }
     return new ApiError('NETWORK', `Server unreachable${server} — check the address and your network connection`, undefined, error);
   }
