@@ -322,7 +322,7 @@ describe('Application setup (e2e)', () => {
     const invalid = await request(server).post('/api/auth/google').send({ idToken: 'bad' }).expect(401);
     expect(invalid.body).toMatchObject({ code: 'INVALID_GOOGLE_TOKEN' });
 
-    await request(server).post('/api/auth/login').send({ email: googleEmail, password: 'anything12345' }).expect(401);
+    await request(server).post('/api/auth/login').send({ email: googleEmail, password: 'not-a-real-password-1' }).expect(401);
   });
 
   it('links and unlinks Google accounts', async () => {

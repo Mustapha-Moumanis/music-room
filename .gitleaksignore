@@ -1,0 +1,3 @@
+# Reviewed false positives (gitleaks fingerprints). Keep each entry justified.
+# Dummy password in a Google-only login e2e test, not a credential.
+1058301d562ee79ed554785a244261a0dfd8d800:backend/test/app.e2e-spec.ts:generic-api-key:325
