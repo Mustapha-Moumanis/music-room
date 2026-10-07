@@ -17,7 +17,10 @@ export type ApiErrorCode =
   | 'ACCOUNT_EXISTS_LINK_REQUIRED'
   | 'GOOGLE_ALREADY_LINKED'
   | 'PASSWORD_REQUIRED_TO_UNLINK'
-  | 'GOOGLE_NOT_LINKED';
+  | 'GOOGLE_NOT_LINKED'
+  | 'USER_NOT_FOUND'
+  | 'CANNOT_FRIEND_SELF'
+  | 'FRIEND_REQUEST_NOT_FOUND';
 
 export class ApiError extends Error {
   constructor(
@@ -25,6 +28,8 @@ export class ApiError extends Error {
     message: string,
     public readonly status?: number,
     public readonly originalError?: unknown,
+    /** Field-level validation messages from a 400 response, e.g. "public.bio must be …". */
+    public readonly details: string[] = [],
   ) {
     super(message);
     this.name = 'ApiError';
@@ -44,7 +49,10 @@ export function toApiError(error: unknown, origin?: string, endpoint?: string): 
       const code = typeof data === 'object' && data !== null && 'code' in data && typeof data.code === 'string'
         ? data.code as ApiErrorCode
         : 'HTTP';
-      return new ApiError(code, `Reached server but ${endpoint ?? 'the request'} returned ${status}`, status, error);
+      const details = typeof data === 'object' && data !== null && 'message' in data && Array.isArray(data.message)
+        ? data.message.filter((item: unknown): item is string => typeof item === 'string')
+        : [];
+      return new ApiError(code, `Reached server but ${endpoint ?? 'the request'} returned ${status}`, status, error, details);
     }
     return new ApiError('NETWORK', `Server unreachable${server} — check the address and your network connection`, undefined, error);
   }

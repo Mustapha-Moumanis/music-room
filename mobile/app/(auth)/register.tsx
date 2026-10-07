@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Text } from 'react-native';
 
 import { register } from '../../src/api/auth';
-import { Action, colors, Screen, styles } from '../../src/components/ui';
+import { Action, Field, Screen, styles } from '../../src/components/ui';
 import { passwordPolicyMessage, validPassword } from '../../src/lib/password-policy';
 
 export default function RegisterScreen() {
@@ -41,13 +41,4 @@ export default function RegisterScreen() {
     <Action title="Create account" loading={loading} disabled={loading} onPress={() => void submit()} />
     <Action title="Back to login" secondary disabled={loading} onPress={() => router.replace('/(auth)/login')} />
   </Screen>;
-}
-
-function Field(props: React.ComponentProps<typeof TextInput> & { label: string }) {
-  const { label, ...input } = props;
-  return <View style={{ gap: 10 }}>
-    <Text style={styles.label}>{label}</Text>
-    <TextInput accessibilityLabel={label} style={styles.input} placeholderTextColor={colors.muted}
-      autoCapitalize="none" autoCorrect={false} {...input} />
-  </View>;
 }
