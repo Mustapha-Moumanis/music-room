@@ -24,10 +24,8 @@ async function upsertDemoUser(email: string, displayName: string, password: stri
       identities: { create: { provider: IdentityProvider.LOCAL, providerId: email } },
       profile: {
         create: {
-          publicInfo: { displayName },
-          friendsInfo: {},
-          privateInfo: {},
-          musicPreferences: ['house', 'pop'],
+          bio: `${displayName} is a demo listener.`,
+          musicGenres: ['house', 'pop'],
         },
       },
     },

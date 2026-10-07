@@ -21,6 +21,12 @@ enum FriendshipStatus {
   ACCEPTED
 }
 
+enum ProfileVisibility {
+  PUBLIC
+  FRIENDS
+  PRIVATE
+}
+
 enum TrackProvider {
   DEEZER
 }
@@ -141,17 +147,22 @@ model EmailToken {
   @@index([expiresAt])
 }
 
+/// Field groups follow V.1: public (User.displayName, bio, avatarUrl), friends-only (realName, city),
+/// private (birthDate, phone) and music preferences, whose audience the owner picks.
 model Profile {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  publicInfo       Json     @default("{}")
-  friendsInfo      Json     @default("{}")
-  privateInfo      Json     @default("{}")
-  avatarUrl        String?
-  bio              String?
-  musicPreferences String[] @default([])
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String            @id @default(cuid())
+  userId          String            @unique
+  bio             String?
+  avatarUrl       String?
+  realName        String?
+  city            String?
+  birthDate       DateTime?         @db.Date
+  phone           String?
+  musicGenres     String[]          @default([])
+  musicTags       String[]          @default([])
+  musicVisibility ProfileVisibility @default(PUBLIC)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

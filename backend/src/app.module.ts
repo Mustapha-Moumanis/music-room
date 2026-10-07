@@ -8,6 +8,7 @@ import { LoggingModule } from './core/logging/logging.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { LogsModule } from './modules/logs/logs.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { LogsModule } from './modules/logs/logs.module';
     HealthModule,
     LogsModule,
     AuthModule,
+    UsersModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

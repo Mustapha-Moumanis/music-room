@@ -12,6 +12,7 @@ import { PrismaService } from '../src/core/database/prisma.service';
 import { MailService } from '../src/core/mail/mail.service';
 import { hashToken } from '../src/modules/auth/email-verification-notifier';
 import { GoogleIdTokenVerificationError, GoogleIdTokenVerifier } from '../src/modules/auth/google-id-token.verifier';
+import { createVerifiedSession } from './helpers';
 
 class TestDto {
   @IsString()
@@ -383,7 +384,7 @@ describe('Application setup (e2e)', () => {
     const protectedRoutes = discoverControllerRoutes(app).filter((route) => !route.isPublic);
     expect(protectedRoutes.map((route) => `${route.method} ${route.path}`)).toContain('GET /api/auth/me');
     for (const route of protectedRoutes) {
-      await request(server)[route.method.toLowerCase() as 'get' | 'post' | 'delete'](route.path).send({}).expect(401);
+      await request(server)[route.method.toLowerCase() as 'get' | 'post' | 'delete' | 'patch'](route.path).send({}).expect(401);
     }
   });
 
@@ -421,13 +422,6 @@ function stripVolatileError(body: Record<string, unknown>): Record<string, unkno
   return stable;
 }
 
-async function createVerifiedSession(prisma: PrismaService, server: Server, email: string, password = 'musicRoom42') {
-  await request(server).post('/api/auth/register').send({ email, password, displayName: 'Race User' }).expect(201);
-  await prisma.user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
-  const login = await request(server).post('/api/auth/login').send({ email, password }).expect(200);
-  return login.body as { accessToken: string; refreshToken: string; user: { id: string } };
-}
-
 function extractVerifyLink(text: string): string {
   const match = text.match(/http:\/\/localhost:3000(\/api\/auth\/verify\?token=[A-Za-z0-9_-]+)/);
   if (!match) throw new Error(`No verification link found in ${text}`);
@@ -440,8 +434,11 @@ function extractResetCode(text: string): string {
   return match[1];
 }
 
+// RequestMethod values from @nestjs/common: GET=0, POST=1, DELETE=3, PATCH=4.
+const ROUTE_METHODS: Partial<Record<number, DiscoveredRoute['method']>> = { 0: 'GET', 1: 'POST', 3: 'DELETE', 4: 'PATCH' };
+
 interface DiscoveredRoute {
-  method: 'GET' | 'POST' | 'DELETE';
+  method: 'GET' | 'POST' | 'DELETE' | 'PATCH';
   path: string;
   isPublic: boolean;
 }
@@ -464,9 +461,10 @@ function discoverControllerRoutes(app: INestApplication): DiscoveredRoute[] {
         const routePath = pathValue(Reflect.getMetadata(PATH_METADATA, handler));
         const method = Reflect.getMetadata(METHOD_METADATA, handler) as number | undefined;
         if (routePath === undefined || method === undefined) continue;
-        if (method !== 0 && method !== 1 && method !== 3) continue;
+        const name = ROUTE_METHODS[method];
+        if (!name) continue;
         routes.push({
-          method: method === 0 ? 'GET' : method === 1 ? 'POST' : 'DELETE',
+          method: name,
           path: joinApiPath(controllerPath, routePath),
           isPublic: reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [handler, controller]) ?? controllerPublic,
         });
