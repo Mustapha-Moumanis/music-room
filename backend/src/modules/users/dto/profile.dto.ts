@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProfileVisibility } from '@prisma/client';
+import { RELATIONSHIPS, Relationship } from '../../friends/dto/friend.dto';
 import { MUSIC_GENRES } from '../profile.constants';
 
 export class PublicInfoDto {
@@ -58,6 +59,27 @@ export class MyProfileDto {
 
   @ApiProperty({ type: MusicPreferencesDto })
   music!: MusicPreferencesDto;
+}
+
+/** Another user's profile: groups the viewer may not see are left out entirely. */
+export class UserProfileDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: RELATIONSHIPS })
+  relationship!: Relationship;
+
+  @ApiProperty({ type: PublicInfoDto })
+  public!: PublicInfoDto;
+
+  @ApiPropertyOptional({ type: FriendsInfoDto, description: 'Only for friends and yourself' })
+  friends?: FriendsInfoDto;
+
+  @ApiPropertyOptional({ type: PrivateInfoDto, description: 'Only for yourself' })
+  private?: PrivateInfoDto;
+
+  @ApiPropertyOptional({ type: MusicPreferencesDto, description: 'Depends on the visibility the owner chose' })
+  music?: MusicPreferencesDto;
 }
 
 export class GenresResponseDto {

@@ -102,4 +102,92 @@ describe('Profiles (e2e)', () => {
       expect(response.body.genres).toEqual(expect.arrayContaining(['house', 'jazz', 'rock']));
     });
   });
+
+  describe('/users/:id', () => {
+    const publicInfo = { displayName: 'Owner', bio: 'Vinyl digger', avatarUrl: 'https://example.com/owner.png' };
+    const friendsInfo = { realName: 'Owen Owner', city: 'Tangier' };
+    const privateInfo = { birthDate: '1998-12-01', phone: '+212 611 111 111' };
+    const music = { genres: ['gnawa', 'jazz'], tags: ['sunset'], visibility: 'FRIENDS' };
+
+    let owner: TestSession;
+    let friend: TestSession;
+    let stranger: TestSession;
+    let requester: TestSession;
+    const viewProfile = (viewer: TestSession, userId = owner.user.id) =>
+      request(server).get(`/api/users/${userId}`).auth(viewer.accessToken, { type: 'bearer' });
+    const setMusicVisibility = (visibility: string) => request(server).patch('/api/users/me')
+      .auth(owner.accessToken, { type: 'bearer' }).send({ music: { visibility } }).expect(200);
+
+    beforeAll(async () => {
+      owner = await signUp('owner', 'Owner');
+      friend = await signUp('viewer', 'Friend');
+      stranger = await signUp('viewer', 'Stranger');
+      requester = await signUp('viewer', 'Requester');
+      await request(server).patch('/api/users/me').auth(owner.accessToken, { type: 'bearer' })
+        .send({ public: { bio: publicInfo.bio, avatarUrl: publicInfo.avatarUrl }, friends: friendsInfo, private: privateInfo, music })
+        .expect(200);
+      await request(server).post(`/api/friends/requests/${owner.user.id}`).auth(friend.accessToken, { type: 'bearer' }).expect(200);
+      await request(server).post(`/api/friends/requests/${friend.user.id}/accept`).auth(owner.accessToken, { type: 'bearer' }).expect(200);
+      await request(server).post(`/api/friends/requests/${owner.user.id}`).auth(requester.accessToken, { type: 'bearer' }).expect(200);
+    });
+
+    afterEach(async () => { await setMusicVisibility('FRIENDS'); });
+
+    it('shows a stranger only the public info', async () => {
+      const response = await viewProfile(stranger).expect(200);
+      expect(response.body).toEqual({ id: owner.user.id, relationship: 'NONE', public: publicInfo });
+    });
+
+    it('shows a pending requester no more than a stranger', async () => {
+      const response = await viewProfile(requester).expect(200);
+      expect(response.body).toEqual({ id: owner.user.id, relationship: 'REQUEST_SENT', public: publicInfo });
+      const reverse = await viewProfile(owner, requester.user.id).expect(200);
+      expect(reverse.body).toEqual({
+        id: requester.user.id, relationship: 'REQUEST_RECEIVED',
+        public: { displayName: 'Requester', bio: null, avatarUrl: null },
+        music: { genres: [], tags: [], visibility: 'PUBLIC' },
+      });
+    });
+
+    it('shows a friend public and friends-only info, never private info', async () => {
+      const response = await viewProfile(friend).expect(200);
+      expect(response.body).toEqual({ id: owner.user.id, relationship: 'FRIENDS', public: publicInfo, friends: friendsInfo, music });
+    });
+
+    it('shows me every group of my own profile', async () => {
+      const response = await viewProfile(owner).expect(200);
+      expect(response.body).toEqual({
+        id: owner.user.id, relationship: 'SELF', public: publicInfo, friends: friendsInfo, private: privateInfo, music,
+      });
+    });
+
+    it('applies the music visibility the owner picks', async () => {
+      await setMusicVisibility('PUBLIC');
+      expect((await viewProfile(stranger).expect(200)).body.music).toEqual({ ...music, visibility: 'PUBLIC' });
+
+      await setMusicVisibility('PRIVATE');
+      expect((await viewProfile(friend).expect(200)).body).not.toHaveProperty('music');
+      expect((await viewProfile(owner).expect(200)).body.music).toEqual({ ...music, visibility: 'PRIVATE' });
+    });
+
+    it('hides friends-only info again once the friendship is removed', async () => {
+      const exFriend = await signUp('viewer', 'Ex Friend');
+      await request(server).post(`/api/friends/requests/${owner.user.id}`).auth(exFriend.accessToken, { type: 'bearer' }).expect(200);
+      await request(server).post(`/api/friends/requests/${exFriend.user.id}/accept`).auth(owner.accessToken, { type: 'bearer' }).expect(200);
+      expect((await viewProfile(exFriend).expect(200)).body).toHaveProperty('friends', friendsInfo);
+
+      await request(server).delete(`/api/friends/${exFriend.user.id}`).auth(owner.accessToken, { type: 'bearer' }).expect(204);
+      expect((await viewProfile(exFriend).expect(200)).body).toEqual({ id: owner.user.id, relationship: 'NONE', public: publicInfo });
+    });
+
+    it('returns 404 for unknown and unverified users', async () => {
+      const unknown = await viewProfile(stranger, 'does-not-exist').expect(404);
+      expect(unknown.body.code).toBe('USER_NOT_FOUND');
+
+      const email = uniqueEmail('unverified');
+      await request(server).post('/api/auth/register').send({ email, password: 'musicRoom42', displayName: 'Pending' }).expect(201);
+      const pending = await prisma.user.findUniqueOrThrow({ where: { email } });
+      await viewProfile(stranger, pending.id).expect(404);
+    });
+  });
 });

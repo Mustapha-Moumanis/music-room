@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service';
 import { FriendsService, toUserSummary, USER_SUMMARY_SELECT } from '../friends/friends.service';
-import { MyProfileDto } from './dto/profile.dto';
+import { MyProfileDto, UserProfileDto } from './dto/profile.dto';
+import { visibleSections } from './profile-visibility';
 import { UserSearchResultDto } from './dto/search-users.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import {
@@ -25,6 +26,25 @@ export class UsersService {
       .map((user) => ({ ...toUserSummary(user), relationship: relationships.get(user.id) ?? 'NONE' }))
       // The database orders uppercase first; people expect "Ana" before "ANABEL".
       .sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }));
+  }
+
+  async getUserProfile(viewerId: string, userId: string): Promise<UserProfileDto> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, ...(userId === viewerId ? {} : { emailVerifiedAt: { not: null } }) },
+      select: { id: true, displayName: true, profile: { select: PROFILE_SELECT } },
+    });
+    if (!user) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'User not found.' });
+    const relationship = await this.friends.relationship(viewerId, userId);
+    const profile = profileOrEmpty(user.profile);
+    const visible = visibleSections(relationship, profile.musicVisibility);
+    return {
+      id: user.id,
+      relationship,
+      public: toPublicInfo(user.displayName, profile),
+      ...(visible.friends ? { friends: toFriendsInfo(profile) } : {}),
+      ...(visible.private ? { private: toPrivateInfo(profile) } : {}),
+      ...(visible.music ? { music: toMusicPreferences(profile) } : {}),
+    };
   }
 
   async getMyProfile(userId: string): Promise<MyProfileDto> {

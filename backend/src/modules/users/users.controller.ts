@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Patch, Query } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import {
+  ApiBadRequestResponse, ApiBearerAuth, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../../core/auth/current-user.decorator';
 import { AuthenticatedUser } from '../../core/auth/auth.types';
-import { GenresResponseDto, MyProfileDto } from './dto/profile.dto';
+import { GenresResponseDto, MyProfileDto, UserProfileDto } from './dto/profile.dto';
 import { SearchUsersQueryDto, UserSearchResultDto } from './dto/search-users.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { MUSIC_GENRES } from './profile.constants';
@@ -41,5 +43,14 @@ export class UsersController {
   @ApiOkResponse({ type: UserSearchResultDto, isArray: true })
   search(@CurrentUser() user: AuthenticatedUser, @Query() query: SearchUsersQueryDto): Promise<UserSearchResultDto[]> {
     return this.users.search(user.id, query.q);
+  }
+
+  // Declared last so /users/me, /users/genres and /users/search are not read as an id.
+  @Get(':id')
+  @ApiOperation({ summary: "View a user's profile: public always, friends-only for friends, private only for yourself" })
+  @ApiOkResponse({ type: UserProfileDto })
+  @ApiNotFoundResponse({ description: 'USER_NOT_FOUND' })
+  getUser(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<UserProfileDto> {
+    return this.users.getUserProfile(user.id, id);
   }
 }
