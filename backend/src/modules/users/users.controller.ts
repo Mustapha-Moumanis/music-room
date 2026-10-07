@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../core/auth/current-user.decorator';
 import { AuthenticatedUser } from '../../core/auth/auth.types';
 import { GenresResponseDto, MyProfileDto } from './dto/profile.dto';
+import { SearchUsersQueryDto, UserSearchResultDto } from './dto/search-users.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { MUSIC_GENRES } from './profile.constants';
 import { UsersService } from './users.service';
@@ -33,5 +34,12 @@ export class UsersController {
   @ApiOkResponse({ type: GenresResponseDto })
   genres(): GenresResponseDto {
     return { genres: [...MUSIC_GENRES] };
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Find people by display name (max 20, yourself excluded)' })
+  @ApiOkResponse({ type: UserSearchResultDto, isArray: true })
+  search(@CurrentUser() user: AuthenticatedUser, @Query() query: SearchUsersQueryDto): Promise<UserSearchResultDto[]> {
+    return this.users.search(user.id, query.q);
   }
 }

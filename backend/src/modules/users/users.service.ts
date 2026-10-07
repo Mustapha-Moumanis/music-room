@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../core/database/prisma.service';
+import { FriendsService, toUserSummary, USER_SUMMARY_SELECT } from '../friends/friends.service';
 import { MyProfileDto } from './dto/profile.dto';
+import { UserSearchResultDto } from './dto/search-users.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import {
   PROFILE_SELECT, profileOrEmpty, toFriendsInfo, toMusicPreferences, toPrivateInfo, toPublicInfo,
@@ -8,7 +10,22 @@ import {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly friends: FriendsService) {}
+
+  /** Matches display names only: searching by email would reveal which addresses have an account. */
+  async search(viewerId: string, query: string): Promise<UserSearchResultDto[]> {
+    const users = await this.prisma.user.findMany({
+      where: { id: { not: viewerId }, emailVerifiedAt: { not: null }, displayName: { contains: query, mode: 'insensitive' } },
+      select: USER_SUMMARY_SELECT,
+      orderBy: { displayName: 'asc' },
+      take: 20,
+    });
+    const relationships = await this.friends.relationships(viewerId, users.map((user) => user.id));
+    return users
+      .map((user) => ({ ...toUserSummary(user), relationship: relationships.get(user.id) ?? 'NONE' }))
+      // The database orders uppercase first; people expect "Ana" before "ANABEL".
+      .sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' }));
+  }
 
   async getMyProfile(userId: string): Promise<MyProfileDto> {
     const user = await this.prisma.user.findUniqueOrThrow({
