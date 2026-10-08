@@ -6,7 +6,7 @@ import { Text, TextInput, View } from 'react-native';
 import { googleSignIn, login } from '../../src/api/auth';
 import { ApiError } from '../../src/api/errors';
 import { pingHealth } from '../../src/api/health';
-import { signInWithGoogle } from '../../src/auth/google';
+import { googleSignInAvailable, signInWithGoogle } from '../../src/auth/google';
 import { Action, colors, Screen, styles } from '../../src/components/ui';
 import { isDevBuild } from '../../src/config/variant';
 import { useSettingsStore } from '../../src/stores/settings.store';
@@ -66,7 +66,7 @@ export default function LoginScreen() {
     </View>
     {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
     <Action title="Log in" loading={busy === 'login'} disabled={busy !== ''} onPress={() => void submit()} />
-    <Action title="Continue with Google" secondary loading={busy === 'google'} disabled={busy !== ''} onPress={() => void submitGoogle()} />
+    {googleSignInAvailable && <Action title="Continue with Google" secondary loading={busy === 'google'} disabled={busy !== ''} onPress={() => void submitGoogle()} />}
     <Action title="Register" secondary disabled={busy !== ''} onPress={() => router.push('/(auth)/register')} />
     <Action title="Forgot password" secondary disabled={busy !== ''} onPress={() => router.push('/(auth)/forgot-password')} />
     <View style={styles.panel}>
@@ -76,7 +76,7 @@ export default function LoginScreen() {
         {health.isError ? `Error — ${health.error.message}` : health.data ? `OK · ${health.data.latencyMs} ms` : 'Checking connection…'}
       </Text>
     </View>
-    {isDevBuild() && <Action title="Google sign-in spike" secondary onPress={() => router.push('/dev/google-spike')} />}
+    {isDevBuild() && googleSignInAvailable && <Action title="Google sign-in spike" secondary onPress={() => router.push('/dev/google-spike')} />}
     <Action title="Server settings" secondary onPress={() => router.push('/settings')} />
   </Screen>;
 }

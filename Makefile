@@ -2,7 +2,7 @@
 DC ?= docker compose
 SCENARIO ?= scenarios/vote.yml
 
-.PHONY: help install up down dev logs ps restart clean test seed mobile apk loadtest check-secrets
+.PHONY: help install up down dev logs ps restart clean test seed mobile mobile-android apk loadtest check-secrets
 
 help: ## Show available targets
 	@awk 'BEGIN { FS = ":.*## " } /^[a-z-]+:.*## / { printf "  %-15s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -49,8 +49,11 @@ test: ## Run backend and mobile tests when scaffolded
 seed: ## Seed the backend database
 	@if [ -f docker-compose.yml ]; then $(DC) exec backend npm run seed; else echo 'docker-compose.yml not present yet (MCH-79)'; fi
 
-mobile: ## Start the Expo development server
-	@if [ -f mobile/package.json ]; then cd mobile && npx expo start; else echo 'skip mobile: not scaffolded yet'; exit 1; fi
+mobile: ## Start the app in the browser (Expo web on :8081; teammates use http://<this-machine-ip>:8081)
+	@if [ -f mobile/package.json ]; then cd mobile && npx expo start --web; else echo 'skip mobile: not scaffolded yet'; exit 1; fi
+
+mobile-android: ## Start the Expo dev server for the Android development client
+	@if [ -f mobile/package.json ]; then cd mobile && npx expo start --dev-client; else echo 'skip mobile: not scaffolded yet'; exit 1; fi
 
 apk: ## Generate Android sources and build a release APK
 	@if [ -f mobile/package.json ]; then \

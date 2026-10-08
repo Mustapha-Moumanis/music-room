@@ -26,7 +26,7 @@ jest.mock('../api/auth', () => ({
   linkGoogle: jest.fn(),
   logoutAll: jest.fn(),
 }));
-jest.mock('../auth/google', () => ({ signInWithGoogle: jest.fn() }));
+jest.mock('../auth/google', () => ({ googleSignInAvailable: true, signInWithGoogle: jest.fn() }));
 
 function Wrapper({ children }: PropsWithChildren) {
   return <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })}>{children}</QueryClientProvider>;

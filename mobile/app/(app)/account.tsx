@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 
 import { linkGoogle, logoutAll, unlinkGoogle } from '../../src/api/auth';
 import { ApiError } from '../../src/api/errors';
-import { signInWithGoogle } from '../../src/auth/google';
+import { googleSignInAvailable, signInWithGoogle } from '../../src/auth/google';
 import { Action, Screen, styles } from '../../src/components/ui';
 import { useSessionStore } from '../../src/stores/session.store';
 
@@ -35,6 +35,7 @@ export default function AccountScreen() {
     </View>
     {error ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text> : null}
     {message ? <Text accessibilityLiveRegion="polite" style={styles.success}>{message}</Text> : null}
+    {googleSignInAvailable ? <>
     <Action title="Link Google" secondary disabled={busy !== '' || hasGoogle} loading={busy === 'link'} onPress={() => void run('link', async () => {
       const google = await signInWithGoogle();
       setUser(await linkGoogle({ idToken: google.idToken }));
@@ -45,6 +46,7 @@ export default function AccountScreen() {
       setUser(await unlinkGoogle());
       setMessage('Google unlinked.');
     })} />
+    </> : <Text style={styles.body}>Linking Google is available in the Android app.</Text>}
     <Action title="Log out" disabled={busy !== ''} loading={busy === 'logout'} onPress={() => void run('logout', signOut)} />
     <Action title="Log out of all devices" secondary disabled={busy !== ''} loading={busy === 'logoutAll'} onPress={() => void run('logoutAll', async () => {
       await logoutAll();

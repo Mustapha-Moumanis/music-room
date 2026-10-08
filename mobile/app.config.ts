@@ -6,7 +6,9 @@ const config: ExpoConfig = {
   owner: 'music-room-42s-team',
   version: '1.0.0',
   scheme: 'musicroom',
-  platforms: ['android'],
+  // Web is for previewing and testing the UI in a browser; the shipped app is Android.
+  platforms: ['android', 'web'],
+  web: { bundler: 'metro', output: 'single' },
   orientation: 'portrait',
   userInterfaceStyle: 'dark',
   android: {

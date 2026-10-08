@@ -1,5 +1,5 @@
 import { useState, type ComponentProps, type PropsWithChildren } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const colors = { background: '#111513', panel: '#1b211d', text: '#f0f0e8', muted: '#a6b0a9', accent: '#d8ed95', error: '#ffaaa0', border: '#354138' };
@@ -63,7 +63,8 @@ export function LoadingScreen() {
 
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { flexGrow: 1, padding: 24, paddingTop: 40, gap: 20 },
+  // In a desktop browser, keep the phone-sized column instead of stretching across the window.
+  content: { flexGrow: 1, padding: 24, paddingTop: 40, gap: 20, ...(Platform.OS === 'web' ? { width: '100%', maxWidth: 560, alignSelf: 'center' } : null) },
   eyebrow: { color: colors.accent, fontSize: 12, fontWeight: '700', letterSpacing: 3 },
   title: { color: colors.text, fontSize: 38, fontWeight: '700', letterSpacing: -1 },
   heading: { color: colors.text, fontSize: 20, fontWeight: '700' },

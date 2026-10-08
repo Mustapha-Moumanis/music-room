@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Platform, Text, View } from 'react-native';
 
 import { ApiError } from '../api/errors';
 import { acceptFriendRequest, cancelFriendRequest, declineFriendRequest, friendKeys, removeFriend, sendFriendRequest } from '../api/friends';
@@ -44,6 +44,13 @@ export function RelationshipAction({ userId, name, relationship, compact = false
   }
 
   function confirmRemove() {
+    // react-native-web's Alert is a no-op, so the browser build asks with the native dialog.
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Remove ${name}? They will no longer see your friends-only details.`)) {
+        void run('remove', () => removeFriend(userId));
+      }
+      return;
+    }
     Alert.alert(`Remove ${name}?`, 'They will no longer see your friends-only details.', [
       { text: 'Keep', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => void run('remove', () => removeFriend(userId)) },

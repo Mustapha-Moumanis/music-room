@@ -4,6 +4,9 @@ type GoogleModule = typeof import('@react-native-google-signin/google-signin');
 export type GoogleSignInErrorCode = 'cancelled' | 'in_progress' | 'play_services_missing' | 'configuration' | 'native_module_missing' | 'sign_in_required' | 'unknown';
 export type GoogleSignInResult = { idToken: string; email: string };
 
+/** Native Google Sign-In ships in the Android app; the web build swaps in google.web.ts. */
+export const googleSignInAvailable = true;
+
 export class GoogleSignInError extends Error {
   constructor(public readonly code: GoogleSignInErrorCode, message: string) {
     super(message);

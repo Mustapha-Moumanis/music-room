@@ -6,7 +6,7 @@ Expo React Native app, and Artillery load tests. Scaffolding arrives in later ti
 ## Layout
 
 - `backend/` — NestJS API and Prisma database layer.
-- `mobile/` — Expo React Native app (Android only).
+- `mobile/` — Expo React Native app (Android; also runs in a browser for previews, see `mobile/README.md`).
 - `loadtest/` — Artillery scenarios and load tests.
 - `docs/` — project documentation and plan.
 
@@ -25,7 +25,7 @@ print a notice until `docker-compose.yml` arrives in MCH-79.
 ## Make targets
 
 `help`, `install`, `up`, `down`, `dev`, `logs`, `ps`, `restart`, `clean`, `test`,
-`seed`, `mobile`, `apk`, `loadtest`, `check-secrets`. Run `make help` for descriptions.
+`seed`, `mobile` (browser preview), `mobile-android`, `apk`, `loadtest`, `check-secrets`. Run `make help` for descriptions.
 Use `make loadtest SCENARIO=scenarios/vote.yml` to choose a scenario.
 `make clean` removes Docker volumes, including stored database data.
 

@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export class BackendUrlError extends Error {
   readonly code = 'INVALID_BACKEND_URL';
 
@@ -28,10 +30,19 @@ export function normalizeBackendUrl(input: string): string {
   }
 }
 
+/**
+ * In a browser the API runs on the machine that served the page, so a teammate opening
+ * http://<host-lan-ip>:8081 talks to http://<host-lan-ip>:3000 without touching Settings.
+ */
+function webBackendUrl(): string | undefined {
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.location?.hostname) return undefined;
+  return `${window.location.protocol}//${window.location.hostname}:3000`;
+}
+
 // A malformed build-time value must not prevent opening Settings to repair it.
 function defaultBackendUrl(): string {
   try {
-    return normalizeBackendUrl(process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000');
+    return normalizeBackendUrl(webBackendUrl() || process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000');
   } catch {
     return 'http://10.0.2.2:3000';
   }
