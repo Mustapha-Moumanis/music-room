@@ -666,7 +666,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.app,
   },
   bottomNavigationItem: {
-    width: 64,
+    minWidth: 0,
+    maxWidth: 64,
+    flex: 1,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
@@ -987,4 +989,3 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text.primary,
   },
 });
-

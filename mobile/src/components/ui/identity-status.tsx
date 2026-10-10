@@ -19,7 +19,7 @@ export type IdentityLayoutStyle = Pick<
   'minWidth' | 'maxWidth' | 'alignSelf' | 'flex' | 'flexGrow' | 'flexShrink' | 'flexBasis'
 >;
 
-export type AvatarSize = 'small' | 'medium' | 'topBar' | 'card' | 'large';
+export type AvatarSize = 'small' | 'medium' | 'topBar' | 'header' | 'card' | 'large';
 
 export type AvatarProps = Omit<
   ViewProps,
@@ -66,6 +66,7 @@ const avatarSizes: Record<AvatarSize, number> = {
   small: spacing[32],
   medium: layout.minimumTouchTarget,
   topBar: 36,
+  header: 40,
   card: spacing[48],
   large: spacing[64],
 };

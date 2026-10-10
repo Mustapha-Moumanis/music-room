@@ -290,6 +290,7 @@ export type FriendRequestRowProps = Omit<ViewProps, 'children' | 'style'> & {
   onDecline?: PressableProps['onPress'];
   state?: FriendRequestState;
   style?: StyleProp<CardRowLayoutStyle>;
+  summary?: string;
 };
 
 export function FriendRequestRow({
@@ -300,11 +301,12 @@ export function FriendRequestRow({
   onDecline,
   state = 'pending',
   style,
+  summary: summaryOverride,
   testID,
   ...viewProps
 }: FriendRequestRowProps) {
   const isAccepted = state === 'accepted';
-  const summary = isAccepted ? 'Friend request accepted' : 'Sent you a request';
+  const summary = summaryOverride ?? (isAccepted ? 'Friend request accepted' : 'Sent you a request');
 
   return <View {...viewProps} testID={testID} style={[style, styles.friendRequestRow]}>
     <Avatar
@@ -478,4 +480,3 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
 });
-

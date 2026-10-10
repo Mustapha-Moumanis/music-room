@@ -88,6 +88,7 @@ const FieldControl = forwardRef<TextInput, FieldControlProps>(function FieldCont
   const [focused, setFocused] = useState(false);
   const isFocused = focused || testOnly_focused;
   const hasError = Boolean(error);
+  const isMultiline = Boolean(inputProps.multiline);
   const errorMessage = typeof error === 'string' ? error : undefined;
 
   const handleFocus = (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
@@ -113,6 +114,7 @@ const FieldControl = forwardRef<TextInput, FieldControlProps>(function FieldCont
       style={[
         styles.control,
         rounded && styles.roundedControl,
+        isMultiline && styles.multilineControl,
         hasError ? styles.errorControl : isFocused ? styles.focusedControl : styles.defaultControl,
       ]}
     >
@@ -133,7 +135,7 @@ const FieldControl = forwardRef<TextInput, FieldControlProps>(function FieldCont
         placeholderTextColor={colors.text.muted}
         secureTextEntry={secure}
         selectionColor={colors.action.secondary}
-        style={[styles.input, disabled && styles.disabledInput]}
+        style={[styles.input, isMultiline && styles.multilineInput, disabled && styles.disabledInput]}
         underlineColorAndroid="transparent"
       />
       {trailing}
@@ -211,6 +213,10 @@ const styles = StyleSheet.create({
   roundedControl: {
     borderRadius: radius.full,
   },
+  multilineControl: {
+    height: 72,
+    alignItems: 'flex-start',
+  },
   defaultControl: {
     borderWidth: 1,
     borderColor: colors.border.subtle,
@@ -230,6 +236,10 @@ const styles = StyleSheet.create({
     padding: 0,
     outlineWidth: 0,
     color: colors.text.primary,
+  },
+  multilineInput: {
+    minHeight: 48,
+    textAlignVertical: 'top',
   },
   disabledInput: {
     color: colors.text.muted,
