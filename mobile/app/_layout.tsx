@@ -1,33 +1,58 @@
-import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Text } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Action, colors, LoadingScreen, Screen, styles } from '../src/components/ui';
-import { queryClient } from '../src/lib/query-client';
-import { useSettingsStore } from '../src/stores/settings.store';
-import { useSessionStore } from '../src/stores/session.store';
+import { AppFontGate } from '../src/components/app-font-gate';
+import { AppScreen, AppText } from '../src/components/ui';
+import { pressedFeedback } from '../src/components/ui/interaction-feedback';
+import { colors, radius, spacing } from '../src/theme';
 
 export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
-  return <Screen><Text style={styles.title}>Something went wrong</Text><Text style={styles.body}>Please try opening the app again.</Text><Action title="Try again" onPress={retry} /></Screen>;
+  return <AppScreen contentContainerStyle={styles.errorContent}>
+    <View style={styles.errorCopy}>
+      <AppText variant="h3">Something went wrong</AppText>
+      <AppText color="text.secondary">Please try opening the app again.</AppText>
+    </View>
+    <Pressable
+      accessibilityRole="button"
+      onPress={retry}
+      style={({ pressed }) => [styles.retryButton, pressed && pressedFeedback]}
+    >
+      <AppText variant="buttonLabel" color="text.onAccent">Try again</AppText>
+    </Pressable>
+  </AppScreen>;
+}
+
+function AppShell() {
+  return <>
+    <StatusBar style="light" />
+    <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background.app }, headerShown: false }}>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="dev/foundations" options={{ headerShown: false }} />
+      <Stack.Screen name="dev/components" options={{ headerShown: false }} />
+    </Stack>
+  </>;
 }
 
 export default function RootLayout() {
-  const hydrated = useSettingsStore((state) => state.hydrated);
-  const sessionStatus = useSessionStore((state) => state.status);
-  const bootstrap = useSessionStore((state) => state.bootstrap);
-  useEffect(() => {
-    if (hydrated && sessionStatus === 'loading') void bootstrap();
-  }, [bootstrap, hydrated, sessionStatus]);
-  return <QueryClientProvider client={queryClient}>
-    <StatusBar style="light" />
-    {hydrated ? <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background }, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.text }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(app)" options={{ headerShown: false }} />
-      <Stack.Screen name="settings" options={{ title: 'Server settings' }} />
-      <Stack.Screen name="dev/google-spike" options={{ title: 'Google sign-in spike' }} />
-    </Stack> : <LoadingScreen />}
-  </QueryClientProvider>;
+  return <AppFontGate><AppShell /></AppFontGate>;
 }
+
+const styles = StyleSheet.create({
+  errorContent: {
+    justifyContent: 'center',
+    gap: spacing[24],
+  },
+  errorCopy: {
+    gap: spacing[8],
+  },
+  retryButton: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[16],
+    paddingVertical: spacing[12],
+    borderRadius: radius.medium,
+    backgroundColor: colors.action.primary,
+  },
+});
