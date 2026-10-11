@@ -31,7 +31,12 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 
+_ASYNCPG_REJECTED_PARAMS = frozenset({"schema", "pgbouncer", "pool_timeout", "connection_limit"})
+
+
 def _resolve_database_url() -> str:
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
     url = os.getenv("ALEMBIC_DATABASE_URL") or os.getenv("DATABASE_URL")
     if not url:
         raise RuntimeError("DATABASE_URL (or ALEMBIC_DATABASE_URL) must be set to run migrations.")
@@ -40,6 +45,11 @@ def _resolve_database_url() -> str:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    # Strip query params asyncpg can't swallow (e.g. Prisma's `?schema=public`).
+    parts = urlsplit(url)
+    if parts.query:
+        kept = [(k, v) for k, v in parse_qsl(parts.query) if k not in _ASYNCPG_REJECTED_PARAMS]
+        url = urlunsplit(parts._replace(query=urlencode(kept)))
     return url
 
 

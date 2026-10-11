@@ -7,12 +7,14 @@ SCENARIO ?= scenarios/vote.yml
 help: ## Show available targets
 	@awk 'BEGIN { FS = ":.*## " } /^[a-z-]+:.*## / { printf "  %-15s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-install: ## Create missing local env files and install available packages
+install: ## Create missing local env files and install packages
 	@set -e; for env in .env mobile/.env; do \
 		if [ -f "$$env" ]; then :; \
 		elif [ -f "$$env.example" ]; then cp -n "$$env.example" "$$env"; fi; \
 	done; \
-	for dir in backend mobile loadtest; do \
+	if [ -f backend-py/pyproject.toml ]; then (cd backend-py && uv sync); \
+	else printf 'skip backend-py: not scaffolded yet\n'; fi; \
+	for dir in mobile loadtest; do \
 		if [ -f "$$dir/package.json" ]; then \
 			if [ -f "$$dir/package-lock.json" ]; then (cd "$$dir" && npm ci); \
 			else (cd "$$dir" && npm install); fi; \
@@ -40,14 +42,15 @@ restart: ## Restart services
 clean: ## Remove services, volumes, and orphan containers
 	@if [ -f docker-compose.yml ]; then $(DC) down -v --remove-orphans; else echo 'docker-compose.yml not present yet (MCH-79)'; fi
 
-test: ## Run backend and mobile tests when scaffolded
-	@set -e; for dir in backend mobile; do \
-		if [ -f "$$dir/package.json" ]; then (cd "$$dir" && npm test); \
-		else printf 'skip %s: not scaffolded yet\n' "$$dir"; fi; \
-	done
+test: ## Run backend (pytest) and mobile (npm) tests
+	@set -e; \
+	if [ -f backend-py/pyproject.toml ]; then (cd backend-py && uv run pytest); \
+	else printf 'skip backend-py: not scaffolded yet\n'; fi; \
+	if [ -f mobile/package.json ]; then (cd mobile && npm test); \
+	else printf 'skip mobile: not scaffolded yet\n'; fi
 
-seed: ## Seed the backend database
-	@if [ -f docker-compose.yml ]; then $(DC) exec backend npm run seed; else echo 'docker-compose.yml not present yet (MCH-79)'; fi
+seed: ## Seed the backend database (two demo users)
+	@if [ -f docker-compose.yml ]; then $(DC) exec backend uv run python -m app.scripts.seed; else echo 'docker-compose.yml not present yet (MCH-79)'; fi
 
 mobile: ## Start the app in the browser (Expo web on :8081; teammates use http://<this-machine-ip>:8081)
 	@if [ -f mobile/package.json ]; then cd mobile && npx expo start --web; else echo 'skip mobile: not scaffolded yet'; exit 1; fi

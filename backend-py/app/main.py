@@ -26,9 +26,13 @@ from app.core.exceptions import install_exception_handlers
 from app.core.logging import RequestIdMiddleware, configure_logging, get_logger
 from app.core.ratelimit import build_limiter
 from app.core.security_headers import SecurityHeadersMiddleware
-from app.db.base import dispose_engine, init_engine
+from app.db.base import dispose_engine, init_engine, normalise_database_url
+from app.middleware.action_log import ActionLogMiddleware
 from app.modules.auth.router import router as auth_router
+from app.modules.friends.router import router as friends_router
 from app.modules.health.router import router as health_router
+from app.modules.logs.router import router as logs_router
+from app.modules.users.router import router as users_router
 from app.settings import Settings, get_settings
 
 
@@ -37,9 +41,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.LOG_LEVEL)
     log = get_logger("startup")
 
-    database_url = settings.DATABASE_URL
-    if database_url.startswith("postgresql://") and "+asyncpg" not in database_url:
-        database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    database_url = normalise_database_url(settings.DATABASE_URL)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -64,6 +66,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.limiter = limiter
     app.state.settings = settings
 
+    # Middleware wraps outermost-first — order defines what each layer sees.
+    # Request id must wrap action-log so the log row carries the id; action-log must
+    # wrap SlowAPI so throttled responses are still audited; CORS and security headers
+    # wrap everything so the browser gets them on every response path.
+    app.add_middleware(ActionLogMiddleware)
     app.add_middleware(SlowAPIMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -94,6 +101,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # /api is the global prefix mirroring backend/src/app.setup.ts:14.
     app.include_router(health_router, prefix="/api")
     app.include_router(auth_router, prefix="/api")
+    app.include_router(users_router, prefix="/api")
+    app.include_router(friends_router, prefix="/api")
+    app.include_router(logs_router, prefix="/api")
 
     return app
 

@@ -21,20 +21,28 @@ services:
       - musicroom-network
 
   backend:
-    build: ./backend
+    # Switched from ./backend (NestJS) to ./backend-py (FastAPI) at migration cutover.
+    # Container name, port, env vars, and healthcheck URL are unchanged so the mobile
+    # app and other dependents keep working without reconfiguration.
+    build: ./backend-py
     container_name: musicroom-backend
     env_file: .env
     ports:
-      - "${BACKEND_PORT:-3000}:${BACKEND_PORT:-3000}"
+      - "${BACKEND_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backend:/code
-      - /code/node_modules
-    command: npm run start:dev
+      - ./backend-py/app:/code/app
+      - ./backend-py/alembic:/code/alembic
+      - ./backend-py/alembic.ini:/code/alembic.ini
+    command:
+      [
+        "uv", "run", "uvicorn", "app.main:app",
+        "--host", "0.0.0.0", "--port", "3000", "--reload",
+      ]
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:$${BACKEND_PORT}/api/health"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

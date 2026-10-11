@@ -8,6 +8,7 @@ from __future__ import annotations
 import secrets
 from collections.abc import AsyncIterator
 from datetime import datetime
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.ext.asyncio import (
@@ -17,6 +18,28 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# asyncpg rejects a few Prisma-style URL params (notably `?schema=public`); strip them
+# so the Nest-era .env keeps working untouched after the cutover.
+_ASYNCPG_REJECTED_PARAMS = frozenset({"schema", "pgbouncer", "pool_timeout", "connection_limit"})
+
+
+def normalise_database_url(url: str) -> str:
+    """Convert Prisma-style URLs to the SQLAlchemy async driver form.
+
+    Prisma / Nest emit `postgresql://` or `postgres://` with possibly `?schema=public`;
+    SQLAlchemy's async engine wants `postgresql+asyncpg://` and asyncpg doesn't accept
+    `schema` as a connect parameter.
+    """
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://") and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    parts = urlsplit(url)
+    if parts.query:
+        kept = [(k, v) for k, v in parse_qsl(parts.query) if k not in _ASYNCPG_REJECTED_PARAMS]
+        url = urlunsplit(parts._replace(query=urlencode(kept)))
+    return url
 
 
 def generate_cuid() -> str:
@@ -35,16 +58,25 @@ class Base(DeclarativeBase):
 class TimestampMixin:
     """Mirrors Prisma `createdAt @default(now()) / updatedAt @updatedAt`.
 
-    Postgres `now()` is used for both; `updated_at` is maintained by SQLAlchemy's
-    onupdate hook so writes through the ORM behave like Prisma's `@updatedAt`.
+    Prisma-created tables declare `updatedAt NOT NULL` *without* a Postgres default —
+    Prisma itself fills the column from the client on every write. SQLAlchemy's
+    `server_default` only kicks in when the column has a DB-level default, which the
+    Prisma schema doesn't ship with, so we also provide `default=func.now()` to make
+    SQLAlchemy emit `NOW()` on every INSERT. The `onupdate` hook keeps the Prisma
+    `@updatedAt` semantics on every UPDATE through the ORM.
     """
 
     created_at: Mapped[datetime] = mapped_column(
-        "createdAt", DateTime(timezone=False), server_default=func.now(), nullable=False
+        "createdAt",
+        DateTime(timezone=False),
+        default=func.now(),
+        server_default=func.now(),
+        nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         "updatedAt",
         DateTime(timezone=False),
+        default=func.now(),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,

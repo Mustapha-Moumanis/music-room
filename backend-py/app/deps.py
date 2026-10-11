@@ -112,6 +112,7 @@ async def _resolve_user(
 
 
 async def get_current_user(
+    request: Request,
     settings: SettingsDep,
     session: SessionDep,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)] = None,
@@ -123,6 +124,9 @@ async def get_current_user(
         # paths return 401 UNAUTHORIZED, but the service layer surfaces SESSION_REVOKED
         # when it's a stale session. Keeping the simple shape: always UNAUTHORIZED here.
         raise auth_error("UNAUTHORIZED", 401)
+    # Expose the user id to the ActionLog middleware; it reads `scope["state"]["user_id"]`
+    # when the response finishes, so request-scoped audit rows get attributed correctly.
+    request.state.user_id = user.id
     return user
 
 
@@ -130,11 +134,15 @@ CurrentUserDep = Annotated[AuthenticatedUser, Depends(get_current_user)]
 
 
 async def get_optional_user(
+    request: Request,
     settings: SettingsDep,
     session: SessionDep,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)] = None,
 ) -> AuthenticatedUser | None:
-    return await _resolve_user(credentials, settings, session)
+    user = await _resolve_user(credentials, settings, session)
+    if user is not None:
+        request.state.user_id = user.id
+    return user
 
 
 OptionalUserDep = Annotated[AuthenticatedUser | None, Depends(get_optional_user)]
