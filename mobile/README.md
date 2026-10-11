@@ -3,16 +3,18 @@
 Expo SDK 57, TypeScript and Expo Router. Android development client required.
 Routes live in `app/`; configuration, API clients, stores and shared UI live in `src/`.
 
-From the repo root, `make mobile` starts the app **in the browser** (Expo web on
-port 8081) so anyone can try the UI without an Android device; `make mobile-android`
-starts the dev server for the Android development client (`npm run web` /
-`npm start` from this directory do the same).
+From the repo root, `make up` starts Postgres, the backend, and the app **in the
+browser** (Expo web on port 8081). `make mobile` starts the containerized web app
+and its dependencies in the foreground. Source changes are mounted into the
+container for hot reload. `make mobile-android` still starts the host-side dev
+server for the Android development client (`npm run web` / `npm start` from this
+directory provide the equivalent host-side commands).
 
 ### Web preview for teammates
 
 Web is a testing and preview target; the shipped app stays Android-only.
 
-1. Run `make up` (backend) and `make mobile` on one machine.
+1. Run `make up` on one machine.
 2. Add `http://<that-machine-lan-ip>:8081` to `CORS_ORIGINS` in the root `.env`, then
    `docker compose up -d backend`.
 3. Teammates on the same network open `http://<that-machine-lan-ip>:8081`. The web

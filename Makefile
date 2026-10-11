@@ -40,17 +40,15 @@ restart: ## Restart services
 clean: ## Remove services, volumes, and orphan containers
 	@if [ -f docker-compose.yml ]; then $(DC) down -v --remove-orphans; else echo 'docker-compose.yml not present yet (MCH-79)'; fi
 
-test: ## Run backend and mobile tests when scaffolded
-	@set -e; for dir in backend mobile; do \
-		if [ -f "$$dir/package.json" ]; then (cd "$$dir" && npm test); \
-		else printf 'skip %s: not scaffolded yet\n' "$$dir"; fi; \
-	done
+test: ## Run backend and mobile tests inside containers
+	@$(DC) run --rm backend npm test -- --runInBand
+	@$(DC) run --rm mobile npm test
 
 seed: ## Seed the backend database
 	@if [ -f docker-compose.yml ]; then $(DC) exec backend npm run seed; else echo 'docker-compose.yml not present yet (MCH-79)'; fi
 
-mobile: ## Start the app in the browser (Expo web on :8081; teammates use http://<this-machine-ip>:8081)
-	@if [ -f mobile/package.json ]; then cd mobile && npx expo start --web; else echo 'skip mobile: not scaffolded yet'; exit 1; fi
+mobile: ## Build and start the containerized Expo web preview on :8081
+	@if [ -f docker-compose.yml ]; then $(DC) up --build mobile; else echo 'docker-compose.yml not present yet (MCH-79)'; fi
 
 mobile-android: ## Start the Expo dev server for the Android development client
 	@if [ -f mobile/package.json ]; then cd mobile && npx expo start --dev-client; else echo 'skip mobile: not scaffolded yet'; exit 1; fi

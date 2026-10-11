@@ -1,6 +1,7 @@
 name: musicroom
 
 services:
+  # Backend stack — retained for later API integration and runnable independently.
   postgres:
     image: postgres:16-alpine
     container_name: musicroom-postgres
@@ -34,11 +35,39 @@ services:
       - /code/node_modules
     command: npm run start:dev
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:$${BACKEND_PORT}/api/health"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:' + process.env.BACKEND_PORT + '/api/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 40s
+    networks:
+      - musicroom-network
+
+  # Mobile interface workspace — intentionally starts without waiting for the backend.
+  mobile:
+    build: ./mobile
+    container_name: musicroom-mobile
+    environment:
+      EXPO_NO_TELEMETRY: "1"
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${MOBILE_PORT:-8081}:8081"
+    # Backend integration is paused during interface implementation.
+    # Restore this dependency block when mobile API work resumes:
+    # depends_on:
+    #   backend:
+    #     condition: service_healthy
+    volumes:
+      - ./mobile:/code
+      - /code/node_modules
+      - /code/.expo
+    command: npm run web -- --host lan
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8081').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     networks:
       - musicroom-network
 
