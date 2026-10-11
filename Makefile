@@ -12,8 +12,8 @@ install: ## Create missing local env files and install packages
 		if [ -f "$$env" ]; then :; \
 		elif [ -f "$$env.example" ]; then cp -n "$$env.example" "$$env"; fi; \
 	done; \
-	if [ -f backend-py/pyproject.toml ]; then (cd backend-py && uv sync); \
-	else printf 'skip backend-py: not scaffolded yet\n'; fi; \
+	if [ -f backend/pyproject.toml ]; then (cd backend && uv sync); \
+	else printf 'skip backend: not scaffolded yet\n'; fi; \
 	for dir in mobile loadtest; do \
 		if [ -f "$$dir/package.json" ]; then \
 			if [ -f "$$dir/package-lock.json" ]; then (cd "$$dir" && npm ci); \
@@ -44,8 +44,8 @@ clean: ## Remove services, volumes, and orphan containers
 
 test: ## Run backend (pytest) and mobile (npm) tests
 	@set -e; \
-	if [ -f backend-py/pyproject.toml ]; then (cd backend-py && uv run pytest); \
-	else printf 'skip backend-py: not scaffolded yet\n'; fi; \
+	if [ -f backend/pyproject.toml ]; then (cd backend && uv run pytest); \
+	else printf 'skip backend: not scaffolded yet\n'; fi; \
 	if [ -f mobile/package.json ]; then (cd mobile && npm test); \
 	else printf 'skip mobile: not scaffolded yet\n'; fi
 

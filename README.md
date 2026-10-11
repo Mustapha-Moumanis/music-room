@@ -1,14 +1,11 @@
 # Music Room
 
 Music Room is a monorepo for a FastAPI + SQLAlchemy backend, an Android-only
-Expo React Native app, and Artillery load tests. The backend was migrated from a
-NestJS/Prisma stack — the old `backend/` directory is kept in-tree for one green
-sprint before deletion.
+Expo React Native app, and Artillery load tests.
 
 ## Layout
 
-- `backend-py/` — FastAPI API and SQLAlchemy 2.0 + Alembic database layer. **Active.**
-- `backend/` — Legacy NestJS/Prisma backend. **Frozen; serves as rollback until deletion.**
+- `backend/` — FastAPI API and SQLAlchemy 2.0 + Alembic database layer.
 - `mobile/` — Expo React Native app (Android; also runs in a browser for previews, see `mobile/README.md`).
 - `loadtest/` — Artillery scenarios and load tests.
 - `docs/` — project documentation and plan.
@@ -23,15 +20,15 @@ git clone <repository-url> music-room && cd music-room && cp .env.example .env &
 
 `make install` also creates missing `.env` and `mobile/.env` from available examples,
 without overwriting existing files. The backend container runs `alembic upgrade head`
-(or `alembic stamp 0001_baseline` when it detects a Prisma-managed DB) on boot, so
-cutover from the NestJS stack to the FastAPI stack preserves existing data.
+on boot (or stamps the baseline when it attaches to a database whose schema already
+matches), so starting against an existing database preserves data.
 
 ## Make targets
 
 `help`, `install`, `up`, `down`, `dev`, `logs`, `ps`, `restart`, `clean`, `test`,
 `seed`, `mobile` (browser preview), `mobile-android`, `apk`, `loadtest`, `check-secrets`. Run `make help` for descriptions.
 
-- `make test` runs `uv run pytest` in `backend-py/` and `npm test` in `mobile/`.
+- `make test` runs `uv run pytest` in `backend/` and `npm test` in `mobile/`.
 - `make seed` runs `uv run python -m app.scripts.seed` inside the backend container to upsert two demo users (`demo1@musicroom.local`, `demo2@musicroom.local`, password `Password123!`).
 - `make loadtest SCENARIO=scenarios/vote.yml` picks an Artillery scenario.
 - `make clean` removes Docker volumes, including stored database data.
@@ -42,9 +39,9 @@ No third-party code is vendored.
 ## Backend development without Docker
 
 ```sh
-cd backend-py
+cd backend
 uv sync
-uv run alembic upgrade head        # or `alembic stamp 0001_baseline` for an existing Prisma DB
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
