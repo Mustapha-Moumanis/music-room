@@ -1,0 +1,66 @@
+{
+  "queuedTracks": [
+    { "id": "night-drive", "title": "Night Drive", "artist": "FM-84", "duration": "3:56" },
+    { "id": "under-neon", "title": "Under Neon", "artist": "Chromatics", "duration": "4:12" },
+    { "id": "sweet-disposition", "title": "Sweet Disposition", "artist": "The Temper Trap", "duration": "3:51" }
+  ],
+  "suggestedTracks": [
+    { "id": "night-drive", "title": "Night Drive", "artist": "FM-84", "duration": "3:56" },
+    { "id": "los-angeles", "title": "Los Angeles", "artist": "The Midnight", "duration": "3:56" },
+    { "id": "sunset", "title": "Sunset", "artist": "The Midnight", "duration": "3:44" }
+  ],
+  "friends": [
+    { "id": "nada", "initials": "NA", "name": "Nada Amrani" },
+    { "id": "omar", "initials": "OE", "name": "Omar El Idrissi" },
+    { "id": "sara", "initials": "SB", "name": "Sara Benali" }
+  ],
+  "discovery": {
+    "live": { "title": "Rooftop Tape Night", "meta": "Tonight · 20:00 · Benguerir", "attendeeSummary": "24 listening · 8 tracks" },
+    "upcoming": { "title": "Analog Sundays", "meta": "Sat · 18:00 · 12 going", "visibility": "PUBLIC" }
+  },
+  "details": {
+    "title": "Rooftop Tape Night",
+    "description": "A public listening session where guests suggest tracks and vote the queue up in real time.",
+    "information": ["Benguerir · within 250 m", "Tonight · 20:00–23:00", "24 participants"]
+  },
+  "create": {
+    "defaults": { "name": "Rooftop Tape Night", "description": "Late-night listening with friends" },
+    "steps": [
+      { "step": "Step 1 of 4", "title": "Start with the basics", "description": "Give people enough context to understand what kind of listening session this is." },
+      { "step": "Step 2 of 4", "title": "Who can find it?", "description": "Choose how this event appears to other people. You can still invite friends directly." },
+      { "step": "Step 3 of 4", "title": "Set voting rules", "description": "Control who can vote. These checks happen before a vote is accepted." },
+      { "step": "Step 4 of 4", "title": "Where and when?", "description": "Finish the event by defining the permitted place and time window." }
+    ],
+    "visibilityOptions": [
+      { "value": "Public", "title": "Public", "badge": "Public", "description": "Anyone can discover and join." },
+      { "value": "Private", "title": "Private", "badge": "Private", "description": "Only invited people can open it." }
+    ],
+    "votingRuleOptions": [
+      { "value": "everyone", "title": "Everyone", "badge": "Open", "description": "Anyone in the event can vote." },
+      { "value": "invite", "title": "Invited only", "badge": "Invite", "description": "Only invited participants can vote." },
+      { "value": "place-time", "title": "Place + time", "badge": "Checked", "description": "Voting opens only at the event place and time." }
+    ]
+  },
+  "nowPlaying": { "id": "better-off-alone", "title": "Better Off Alone", "artist": "The Midnight", "duration": "3:56" },
+  "baseVotes": { "night-drive": 9, "under-neon": 7, "sweet-disposition": 4 },
+  "inviteDefaultIds": ["nada"],
+  "suggestionDefaults": { "query": "midnight", "selectedId": "los-angeles" },
+  "restrictions": {
+    "invite": { "title": "Invite required", "description": "You need an invitation from the event owner before you can vote.", "action": "Ask owner for invite" },
+    "location": { "title": "Outside permitted location", "description": "Move inside the allowed event area to unlock voting.", "action": "Check location" },
+    "time": { "title": "Outside permitted time", "description": "Voting is only available during the event's configured time window.", "action": "View event time" },
+    "permission": { "title": "Location permission denied", "description": "Allow location access so Music Room can verify that you are at the event.", "action": "Open settings" },
+    "not-found": { "title": "Private event not found", "description": "This event may be private, removed, or unavailable to your account.", "action": "Back to events" }
+  },
+  "schedule": {
+    "initialLocation": "Ben Guerir, Morocco",
+    "monthLabels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "weekdayLabels": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    "radiusOptions": [
+      { "label": "100 m", "meta": "Small venue", "value": "100 m" },
+      { "label": "250 m", "meta": "Recommended", "value": "250 m" },
+      { "label": "500 m", "meta": "Large venue", "value": "500 m" },
+      { "label": "1 km", "meta": "Neighbourhood", "value": "1 km" }
+    ]
+  }
+}

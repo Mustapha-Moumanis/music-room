@@ -26,7 +26,7 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 function AppShell() {
   return <>
     <StatusBar style="light" />
-    <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background.app }, headerShown: false }}>
+    <Stack screenOptions={{ animation: 'fade', contentStyle: { backgroundColor: colors.background.app }, headerShown: false }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="dev/foundations" options={{ headerShown: false }} />
       <Stack.Screen name="dev/components" options={{ headerShown: false }} />

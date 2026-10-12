@@ -9,7 +9,7 @@ jest.mock('expo-router', () => {
   const { Text } = require('react-native');
   return { Redirect: ({ href }: { href: string }) => <Text>Redirect:{href}</Text> };
 });
-jest.mock('@hugeicons/core-free-icons', () => ({ Search01Icon: [], PlayIcon: [], MoreVerticalIcon: [] }));
+jest.mock('@hugeicons/core-free-icons', () => ({ Search01Icon: [], PlayIcon: [] }));
 jest.mock('@hugeicons/react-native', () => {
   const { View } = require('react-native');
   return { HugeiconsIcon: (props: object) => <View {...props} /> };

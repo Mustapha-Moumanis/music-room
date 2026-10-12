@@ -12,8 +12,10 @@ jest.mock('expo-router', () => ({
 
 import {
   CreateEventVisibilityScreen,
+  CreateEventVotingRulesScreen,
   DiscoverEventsScreen,
   InviteFriendsScreen,
+  OwnerEventRoomScreen,
   ParticipantEventRoomScreen,
   SuggestTrackScreen,
 } from '../features/track-vote/track-vote-screens';
@@ -22,29 +24,48 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it('opens event details and exposes event creation from discovery', () => {
+it('opens event details and exposes event creation directly from discovery', () => {
   render(<DiscoverEventsScreen />);
 
+  expect(screen.queryByLabelText('Go back')).toBeNull();
   fireEvent.press(screen.getByTestId('live-event-card'));
   expect(mockPush).toHaveBeenCalledWith('/events/details');
-  fireEvent.press(screen.getByLabelText('More options'));
+  fireEvent.press(screen.getByText('Add event'));
   expect(mockPush).toHaveBeenCalledWith('/events/create');
 });
 
 it('selects event visibility and advances the create flow', () => {
   render(<CreateEventVisibilityScreen />);
 
+  fireEvent.press(screen.getByLabelText('Go back'));
+  expect(mockReplace).toHaveBeenCalledWith('/events/create');
   fireEvent.press(screen.getByText('Private'));
   expect(screen.getByRole('radio', { selected: true })).toHaveTextContent('Private');
   fireEvent.press(screen.getByText('Continue'));
   expect(mockPush).toHaveBeenCalledWith('/events/create/voting-rules');
 });
 
+it('keeps event voting licenses mutually exclusive', () => {
+  render(<CreateEventVotingRulesScreen />);
+  fireEvent.press(screen.getByText('Everyone'));
+  expect(screen.getByRole('radio', { selected: true })).toHaveTextContent('Everyone');
+});
+
 it('changes a queue vote into the voted state', () => {
   render(<ParticipantEventRoomScreen />);
 
+  fireEvent.press(screen.getByLabelText('Open Better Off Alone in Now Playing'));
+  expect(mockPush).toHaveBeenCalledWith('/player');
   fireEvent.press(screen.getByTestId('queue-night-drive-vote'));
-  expect(screen.getByText('+1 · Voted')).toBeTruthy();
+  expect(screen.getByText('Voted')).toBeTruthy();
+});
+
+it('confirms the destructive end-event action', () => {
+  render(<OwnerEventRoomScreen />);
+  fireEvent.press(screen.getByText('End event'));
+  expect(screen.getByText('End this event?')).toBeTruthy();
+  fireEvent.press(screen.getAllByText('End event')[1]);
+  expect(screen.getByText('Event ended')).toBeTruthy();
 });
 
 it('toggles invite selection and submits selected friends', () => {

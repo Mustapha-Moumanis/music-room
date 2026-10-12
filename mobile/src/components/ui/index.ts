@@ -1,6 +1,8 @@
 export { AppIcon, type AppIconData, type AppIconProps, type AppIconTone } from './app-icon';
 export { AppScreen, type AppScreenProps } from './app-screen';
+export { ScrollSurface, type ScrollSurfaceProps } from './scroll-surface';
 export { AppText, type AppTextProps, type AppTextStyle } from './app-text';
+export { HeaderOverflowMenu } from './header-overflow-menu';
 export {
   Button,
   type ButtonLayoutStyle,

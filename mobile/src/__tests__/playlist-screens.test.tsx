@@ -14,46 +14,50 @@ import {
   OwnerPlaylistEditorScreen,
   PlaylistDetailsScreen,
   PlaylistMembersScreen,
-  PlaylistRadioScreen,
 } from '../features/playlists/playlist-screens';
 
 beforeEach(() => jest.clearAllMocks());
 
 it('opens a featured playlist from discovery', () => {
   render(<DiscoverPlaylistsScreen />);
+  expect(screen.queryByLabelText('Go back')).toBeNull();
+  fireEvent.press(screen.getByText('Add playlist'));
+  expect(mockPush).toHaveBeenCalledWith('/playlists/create');
+  fireEvent.press(screen.getByText('My playlists'));
+  expect(mockPush).toHaveBeenCalledWith('/playlists/mine');
   fireEvent.press(screen.getByText('Friends Tape'));
   expect(mockPush).toHaveBeenCalledWith('/playlists/read-only');
 });
 
 it('opens playback and the owner editor from playlist details', () => {
   render(<PlaylistDetailsScreen />);
+  fireEvent.press(screen.getByLabelText('Go back'));
+  expect(mockReplace).toHaveBeenCalledWith('/playlists');
   fireEvent.press(screen.getByText('Play'));
-  expect(mockPush).toHaveBeenCalledWith('/playlists/radio');
+  expect(mockPush).toHaveBeenCalledWith('/player');
   fireEvent.press(screen.getByText('Edit'));
   expect(mockPush).toHaveBeenCalledWith('/playlists/edit');
+  fireEvent.press(screen.getByLabelText('Play Better Off Alone'));
+  expect(mockPush).toHaveBeenCalledWith('/player');
 });
 
-it('supports the editor tools and local reorder action', () => {
+it('supports editor tools, reorder, and remove actions', () => {
   render(<OwnerPlaylistEditorScreen />);
   fireEvent.press(screen.getByText('Add track'));
   expect(mockPush).toHaveBeenCalledWith('/playlists/add-track');
-  fireEvent.press(screen.getByLabelText('Move Night Drive to top'));
-  expect(screen.getByLabelText('Move Night Drive to top')).toBeTruthy();
+  fireEvent(screen.getByLabelText('Reorder Better Off Alone'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+  fireEvent.press(screen.getByLabelText('Remove Better Off Alone'));
+  expect(screen.queryByLabelText('Reorder Better Off Alone')).toBeNull();
 });
 
 it('adds a search result and invites a member locally', () => {
   const add = render(<AddTrackScreen />);
-  fireEvent.press(screen.getAllByRole('checkbox')[0]);
-  expect(screen.getAllByRole('checkbox')[0].props.accessibilityState.checked).toBe(true);
+  expect(screen.getByText('Already added')).toBeTruthy();
+  fireEvent.press(screen.getAllByRole('checkbox')[1]);
+  expect(screen.getByText('Added')).toBeTruthy();
   add.unmount();
 
   render(<PlaylistMembersScreen />);
   fireEvent.press(screen.getByText('Sara Benali'));
   expect(screen.getAllByText('Invited').length).toBeGreaterThanOrEqual(2);
-});
-
-it('updates the radio like control', () => {
-  render(<PlaylistRadioScreen />);
-  fireEvent.press(screen.getByText('Like'));
-  expect(screen.getByText('Liked')).toBeTruthy();
 });

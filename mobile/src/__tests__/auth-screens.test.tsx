@@ -14,11 +14,19 @@ import {
   CheckMailScreen,
   LoginScreen,
   MusicPreferencesScreen,
+  ProfileSetupScreen,
   WelcomeScreen,
 } from '../features/auth/auth-screens';
 
 beforeEach(() => {
   jest.clearAllMocks();
+});
+
+it('enters the app after profile setup', () => {
+  render(<ProfileSetupScreen />);
+
+  fireEvent.press(screen.getByText('Finish setup'));
+  expect(mockReplace).toHaveBeenCalledWith('/home');
 });
 
 it('renders the Figma welcome screen and navigates to registration', () => {

@@ -7,16 +7,19 @@ import {
   AppIcon,
   AppText,
   Avatar,
+  Button,
   SettingsRow,
 } from '../../components/ui';
 import { pressedFeedback } from '../../components/ui/interaction-feedback';
+import profileContent from '../../content/profile.json';
+import { goBackOrReplace } from '../../lib/navigation';
 import { colors, radius, spacing } from '../../theme';
 import {
   ProfileFriendsScreen,
   SectionHeading,
 } from './profile-friends-ui';
 
-function SettingsHeader({ title }: { title: string }) {
+function SettingsHeader({ fallback, title }: { fallback: '/profile' | '/settings'; title: string }) {
   const router = useRouter();
 
   return <View style={styles.header}>
@@ -24,62 +27,62 @@ function SettingsHeader({ title }: { title: string }) {
       <Pressable
         accessibilityLabel="Go back"
         accessibilityRole="button"
-        onPress={() => router.back()}
+        onPress={() => goBackOrReplace(router, fallback)}
         style={({ pressed }) => [styles.headerIconButton, pressed && pressedFeedback]}
       >
         <AppIcon icon={ArrowLeft02Icon} size="standard" />
       </Pressable>
-      <AppText variant="h4" numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
+      <AppText variant="h4" color="action.primary" numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
     </View>
-    <Avatar initials="SH" size="header" />
   </View>;
 }
 
 export function SettingsScreen() {
   const router = useRouter();
-  const [autoplay, setAutoplay] = useState(true);
-  const [mobileData, setMobileData] = useState(false);
+  const settings = profileContent.settings;
+  const [autoplay, setAutoplay] = useState(settings.playbackRows[0].defaultEnabled);
+  const [mobileData, setMobileData] = useState(settings.playbackRows[1].defaultEnabled);
 
   return <ProfileFriendsScreen active="profile" testID="settings-screen">
-    <SettingsHeader title="Settings" />
+    <SettingsHeader fallback="/profile" title="Settings" />
     <Pressable
       accessibilityLabel="View and edit profile"
       accessibilityRole="button"
       onPress={() => router.push('/profile/edit')}
       style={({ pressed }) => [styles.profileSummary, pressed && pressedFeedback]}
     >
-      <Avatar initials="SH" size="card" />
+      <Avatar initials={settings.profile.initials} size="card" />
       <View style={styles.profileCopy}>
-        <AppText variant="navigationLabel">Souad Hilal</AppText>
-        <AppText variant="caption" color="text.muted">View and edit profile</AppText>
+        <AppText variant="navigationLabel">{settings.profile.name}</AppText>
+        <AppText variant="caption" color="text.muted">{settings.profile.subtitle}</AppText>
       </View>
       <AppIcon icon={ArrowRight01Icon} size="compact" tone="muted" />
     </Pressable>
     <SectionHeading title="Account" />
     <SettingsRow
-      title="Linked accounts"
-      subtitle="Google, email and sign-in providers"
+      title={settings.accountRows[0].title}
+      subtitle={settings.accountRows[0].subtitle}
       onPress={() => router.push('/settings/linked-accounts')}
     />
     <SettingsRow
-      title="Backend server"
-      subtitle="Default server"
+      title={settings.accountRows[1].title}
+      subtitle={settings.accountRows[1].subtitle}
       onPress={() => router.push('/backend-url')}
     />
     <SectionHeading title="Playback" />
     <SettingsRow
       testID="autoplay-setting"
       type="toggle"
-      title="Autoplay"
-      subtitle="Continue with similar music"
+      title={settings.playbackRows[0].title}
+      subtitle={settings.playbackRows[0].subtitle}
       enabled={autoplay}
       onToggle={setAutoplay}
     />
     <SettingsRow
       testID="mobile-data-setting"
       type="toggle"
-      title="Download on mobile data"
-      subtitle="Use Wi-Fi only"
+      title={settings.playbackRows[1].title}
+      subtitle={settings.playbackRows[1].subtitle}
       enabled={mobileData}
       onToggle={setMobileData}
     />
@@ -92,37 +95,77 @@ export function SettingsScreen() {
   </ProfileFriendsScreen>;
 }
 
+export function SubscriptionScreen() {
+  const [interested, setInterested] = useState(false);
+
+  return <ProfileFriendsScreen active="profile" testID="subscription-screen">
+    <SettingsHeader fallback="/profile" title="Subscription" />
+    <View style={styles.currentPlanCard}>
+      <View style={styles.planHeading}>
+        <View>
+          <AppText variant="caption" color="text.muted">CURRENT PLAN</AppText>
+          <AppText variant="h3">Music Room Free</AppText>
+        </View>
+        <View style={styles.freeBadge}>
+          <AppText variant="caption">FREE</AppText>
+        </View>
+      </View>
+      <AppText variant="bodySmall" color="text.secondary">
+        Keep discovering music, building playlists, and listening with friends.
+      </AppText>
+    </View>
+    <SectionHeading title="Music Room Pro" />
+    <View style={styles.proCard}>
+      <AppText variant="caption" color="action.secondary">COMING SOON</AppText>
+      <AppText variant="h4">More room for the music you love</AppText>
+      <AppText variant="bodySmall" color="text.secondary">
+        Pro is being shaped around better group listening, richer profiles, and more control over your library.
+      </AppText>
+      <View style={styles.benefitList}>
+        {['Enhanced listening rooms', 'More collaborative playlist tools', 'Early access to new features'].map((benefit) => <View key={benefit} style={styles.benefitRow}>
+          <View style={styles.benefitDot} />
+          <AppText variant="bodySmall" style={styles.benefitCopy}>{benefit}</AppText>
+        </View>)}
+      </View>
+      <Button variant="accent" disabled={interested} onPress={() => setInterested(true)}>
+        {interested ? "You're on the list" : 'Notify me when Pro launches'}
+      </Button>
+    </View>
+  </ProfileFriendsScreen>;
+}
+
 export function LinkedAccountsScreen() {
   const router = useRouter();
+  const [google, email, password, backend] = profileContent.settings.linkedAccounts;
 
   return <ProfileFriendsScreen active="profile" testID="linked-accounts-screen">
-    <SettingsHeader title="Linked accounts" />
+    <SettingsHeader fallback="/settings" title="Linked accounts" />
     <AppText variant="bodySmall" color="text.secondary">
       Manage how you sign in and which services are connected to your account.
     </AppText>
     <SettingsRow
       type="status"
-      title="Google account"
-      subtitle="souad.hilal@gmail.com"
-      status="Connected"
+      title={google.title}
+      subtitle={google.subtitle}
+      status={google.status}
     />
     <SettingsRow
       type="status"
-      title="Email"
-      subtitle="souad@musicroom.app"
-      status="Verified"
+      title={email.title}
+      subtitle={email.subtitle}
+      status={email.status}
     />
     <SettingsRow
-      title="Password"
-      subtitle="Last changed recently"
+      title={password.title}
+      subtitle={password.subtitle}
       onPress={() => router.push('/reset-password')}
     />
     <SectionHeading title="Server" />
     <SettingsRow
       type="status"
-      title="Backend"
-      subtitle="Default Music Room server"
-      status="Connected"
+      title={backend.title}
+      subtitle={backend.subtitle}
+      status={backend.status}
     />
   </ProfileFriendsScreen>;
 }
@@ -165,6 +208,56 @@ const styles = StyleSheet.create({
   },
   profileCopy: {
     minWidth: 1,
+    flex: 1,
+  },
+  currentPlanCard: {
+    width: '100%',
+    gap: spacing[16],
+    padding: spacing[16],
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    borderRadius: radius.card,
+    backgroundColor: colors.background.surface,
+  },
+  planHeading: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[12],
+  },
+  freeBadge: {
+    height: spacing[32],
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[12],
+    borderRadius: radius.full,
+    backgroundColor: colors.category.secondary,
+  },
+  proCard: {
+    width: '100%',
+    gap: spacing[16],
+    overflow: 'hidden',
+    padding: spacing[24],
+    borderRadius: radius.media,
+    backgroundColor: colors.background.surface,
+  },
+  benefitList: {
+    gap: spacing[12],
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[12],
+  },
+  benefitDot: {
+    width: spacing[8],
+    height: spacing[8],
+    borderRadius: radius.full,
+    backgroundColor: colors.action.primary,
+  },
+  benefitCopy: {
+    minWidth: 0,
     flex: 1,
   },
 });

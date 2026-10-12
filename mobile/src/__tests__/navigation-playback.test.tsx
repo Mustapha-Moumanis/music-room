@@ -3,6 +3,13 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
+
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
+}));
+
 jest.mock('@hugeicons/react-native', () => {
   const { View } = require('react-native');
   return { HugeiconsIcon: (props: object) => <View testID="hugeicons-glyph" {...props} /> };
@@ -28,7 +35,7 @@ const playlists: SidebarPlaylist[] = [
 
 it.each([
   ['playing', 'Pause track', '40.8%'],
-  ['paused', 'Play track', '27.4%'],
+  ['paused', 'Play track', '40.8%'],
 ] as const)('matches the %s Mini Player state', (state, actionLabel, elapsedWidth) => {
   const view = render(<MiniPlayer
     artist="The Midnight"
@@ -39,7 +46,7 @@ it.each([
 
   expect(StyleSheet.flatten(view.getByTestId('mini').props.style)).toEqual(expect.objectContaining({
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 430,
     height: layout.miniPlayerHeight,
   }));
   expect(StyleSheet.flatten(view.getByTestId('mini-artwork').props.style)).toEqual(expect.objectContaining({
@@ -61,17 +68,21 @@ it.each([
 
 it('forwards Mini Player actions', () => {
   const onFavoritePress = jest.fn();
+  const onOpenPress = jest.fn();
   const onPlayPausePress = jest.fn();
   const view = render(<MiniPlayer
     artist="The Midnight"
     onFavoritePress={onFavoritePress}
+    onOpenPress={onOpenPress}
     onPlayPausePress={onPlayPausePress}
     title="Better Off Alone"
     testID="mini"
   />);
 
+  fireEvent.press(view.getByTestId('mini-open'));
   fireEvent.press(view.getByTestId('mini-favorite'));
   fireEvent.press(view.getByTestId('mini-play-pause'));
+  expect(onOpenPress).toHaveBeenCalledTimes(1);
   expect(onFavoritePress).toHaveBeenCalledTimes(1);
   expect(onPlayPausePress).toHaveBeenCalledTimes(1);
 });
@@ -89,7 +100,7 @@ it.each(mobileDestinations)('matches Bottom Navigation with %s active', (active)
 
   expect(StyleSheet.flatten(view.getByTestId('navigation').props.style)).toEqual(expect.objectContaining({
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 430,
     height: layout.bottomNavigationHeight,
     paddingHorizontal: spacing[12],
     paddingVertical: spacing[8],
@@ -206,21 +217,18 @@ it.each([
   },
 );
 
-it('forwards Top Bar account and menu actions', () => {
+it('forwards the Top Bar account action without a redundant dots control', () => {
   const onAccountPress = jest.fn();
-  const onMorePress = jest.fn();
   const view = render(<TopBar
     accountName="Souad"
     initials="SH"
     onAccountPress={onAccountPress}
-    onMorePress={onMorePress}
     testID="top"
   />);
 
   fireEvent.press(view.getByTestId('top-account'));
-  fireEvent.press(view.getByTestId('top-more'));
   expect(onAccountPress).toHaveBeenCalledTimes(1);
-  expect(onMorePress).toHaveBeenCalledTimes(1);
+  expect(view.queryByTestId('top-more')).toBeNull();
 });
 
 it.each([

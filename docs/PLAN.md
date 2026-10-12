@@ -20,7 +20,7 @@ Ticket source of truth: `linear/music-room-issues.csv` (52 tickets).
 | Auth | Own JWT access (15 min) + rotating refresh tokens, argon2id, `@nestjs/throttler` | Covers brute force and session theft (V.6). |
 | Social login | **Google only** (`@react-native-google-signin` → `google-auth-library` on the server) | The subject says Facebook *or* Google. Facebook app review is slower. |
 | Mail | Nodemailer → authenticated **SMTP noreply account** | Verification and reset mails are delivered to the recipient. |
-| Music | **Deezer public API** (proxied by the backend) + 30 s previews | No key, no user OAuth, no Premium needed (Spotify needs all three). It supplies data only, so "the SDK must not do your work" holds. |
+| Music | **Provider adapter with Spotify planned first** | Keep catalog and playback behind app-owned interfaces. Spotify credentials, OAuth, playback eligibility, and SDK boundaries are validated during the integration milestone; the current UI stays provider-agnostic. |
 | Mobile | **React Native via Expo** (dev client), **Android only** | The subject allows Android *or* iOS. Android needs no Apple account and you can sideload an APK. |
 | Mobile libs | expo-router, TanStack Query, Zustand, axios, socket.io-client, expo-secure-store, expo-audio, expo-location, react-native-draggable-flatlist | Standard, well documented. |
 | Logs | pino + `ActionLog` table | V.6: platform / device / app version on every action. |
@@ -68,7 +68,7 @@ Ticket source of truth: `linear/music-room-issues.csv` (52 tickets).
 | # | Ambiguity | Decision (change it before you start if you disagree) |
 |---|---|---|
 | A1 | "At least 2 of 3 services", but V.7 says "your 3 services" | Build **Vote + Playlist Editor**. Delegation is the stretch milestone M9. Load-test whatever exists. **Check the evaluation sheet or with peers who have already been evaluated.** |
-| A2 | Does the app have to play real audio? | Yes, 30 s Deezer previews. Full tracks would need Spotify Premium and their SDK. |
+| A2 | Does the app have to play real audio? | Spotify playback is planned. The exact preview/full-track scope depends on the approved Spotify API/SDK access and account eligibility; the UI must not assume a provider-specific capability. |
 | A3 | Who plays the music in a vote event? | The event owner's device. Everyone else sees "now playing" live. |
 | A4 | What "license" means | A per-resource permission mode, not payment. Paid plans are bonus VI.3. |
 | A5 | Can a user log in before validating their email? | No. Login is blocked until verified, with a resend button (strictest reading of "must demand"). |
@@ -92,7 +92,7 @@ Ticket source of truth: `linear/music-room-issues.csv` (52 tickets).
 | **M0 — Foundations** | ✅ `make install up` on a fresh clone. The app on a phone reaches the backend through a configurable URL. Google idToken verified (risk removed). CI green. |
 | **M1 — Auth & Accounts** (V.1) | ✅ register → verify by email → login → reset → logout; Google sign-in plus linking. |
 | **M2 — Profile & Friends** (V.1) | ✅ Stranger, friend and self each see the right profile fields. |
-| **M3 — Music Core & Realtime** | ✅ Search Deezer through the backend, play a preview, receive live room updates. |
+| **M3 — Music Core & Realtime** | ✅ Search Spotify through the backend provider adapter, play permitted media through the client integration, and receive live room updates. |
 | **M4 — Music Track Vote** (V.2.1) | ✅ Two phones vote live. All 3 license modes and both visibilities work. The parallel-vote e2e test passes. **First demo-able service.** |
 | **M5 — Music Playlist Editor** (V.2.3) | ✅ Two phones edit live with no lost or duplicated tracks. Parallel-move e2e test passes. **Mandatory services complete.** |
 | **M6 — Security, Logs & API Docs** (V.4, V.6) | ✅ Throttling, IDOR suite, threat model, complete Swagger plus realtime doc. |
@@ -145,7 +145,7 @@ Sizes: S ≈ ½ day, M ≈ 1–2 days, L ≈ 3 days. Priority: **Urgent = critic
 
 | ID | Ticket | Size | Prio | Blocked by |
 |---|---|---|---|---|
-| MCH-97 | Deezer catalog proxy | S | High | MCH-80 |
+| MCH-97 | Provider catalog adapter (Spotify first) | S | High | MCH-80 |
 | MCH-98 | Socket.IO gateway + room authz | M | High | MCH-86, MCH-82 |
 | MCH-99 | Mobile realtime client + audio player | M | High | MCH-83, MCH-98 |
 | MCH-100 | Track search component (mobile) | S | High | MCH-97, MCH-83 |

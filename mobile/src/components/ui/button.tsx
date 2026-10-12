@@ -11,7 +11,7 @@ import { colors, layout, radius, spacing, type SemanticColorRole } from '../../t
 import { AppText } from './app-text';
 import { pressedFeedback } from './interaction-feedback';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'small' | 'default';
 
 export type ButtonLayoutStyle = Pick<
@@ -28,6 +28,7 @@ export type ButtonProps = Omit<PressableProps, 'accessibilityRole' | 'children' 
 
 const defaultBackgrounds: Record<ButtonVariant, string> = {
   primary: colors.action.primary,
+  accent: colors.action.secondary,
   secondary: colors.background.surface,
   ghost: colors.background.app,
   danger: colors.category.secondary,
@@ -35,6 +36,7 @@ const defaultBackgrounds: Record<ButtonVariant, string> = {
 
 const activeBackgrounds: Record<ButtonVariant, string> = {
   primary: colors.action.secondary,
+  accent: colors.border.subtle,
   secondary: colors.category.secondary,
   ghost: colors.background.surface,
   danger: colors.category.secondary,
@@ -42,6 +44,7 @@ const activeBackgrounds: Record<ButtonVariant, string> = {
 
 const labelColors: Record<ButtonVariant, SemanticColorRole> = {
   primary: 'text.onAccent',
+  accent: 'text.onAccent',
   secondary: 'text.primary',
   ghost: 'text.primary',
   danger: 'text.primary',

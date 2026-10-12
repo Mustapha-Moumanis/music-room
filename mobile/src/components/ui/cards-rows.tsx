@@ -1,5 +1,6 @@
 import { DragDropVerticalIcon } from '@hugeicons/core-free-icons';
 import { Image, type ImageProps } from 'expo-image';
+import type { ReactNode } from 'react';
 import {
   Pressable,
   type PressableProps,
@@ -67,6 +68,7 @@ export type UserCardProps = Omit<ViewProps, 'children' | 'style'> & {
   meta: string;
   name: string;
   onActionPress?: PressableProps['onPress'];
+  onPress?: PressableProps['onPress'];
   relation?: UserCardRelation;
   style?: StyleProp<CardRowLayoutStyle>;
 };
@@ -78,6 +80,7 @@ export function UserCard({
   meta,
   name,
   onActionPress,
+  onPress,
   relation = 'stranger',
   style,
   testID,
@@ -87,17 +90,26 @@ export function UserCard({
   const resolvedActionLabel = actionLabel ?? (isFriend ? 'Friend' : 'Add friend');
 
   return <View {...viewProps} testID={testID} style={[style, styles.userCard]}>
-    <Avatar
-      initials={initials}
-      size="card"
-      source={avatarSource}
-      accessibilityLabel={`${name} profile photo`}
-      testID={testID ? `${testID}-avatar` : undefined}
-    />
-    <View style={styles.compactCopy}>
-      <AppText variant="navigationLabel" numberOfLines={1}>{name}</AppText>
-      <AppText variant="caption" color="text.muted" numberOfLines={1}>{meta}</AppText>
-    </View>
+    <Pressable
+      accessibilityLabel={onPress ? `Open ${name}'s profile` : undefined}
+      accessibilityRole={onPress ? 'button' : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [styles.userCardIdentity, pressed && pressedFeedback]}
+      testID={testID ? `${testID}-profile` : undefined}
+    >
+      <Avatar
+        initials={initials}
+        size="card"
+        source={avatarSource}
+        accessibilityLabel={`${name} profile photo`}
+        testID={testID ? `${testID}-avatar` : undefined}
+      />
+      <View style={styles.compactCopy}>
+        <AppText variant="navigationLabel" numberOfLines={1}>{name}</AppText>
+        <AppText variant="caption" color="text.muted" numberOfLines={1}>{meta}</AppText>
+      </View>
+    </Pressable>
     <Pressable
       accessibilityLabel={resolvedActionLabel}
       accessibilityRole="button"
@@ -215,25 +227,37 @@ export function PlaylistCard({
 }
 
 export type TrackRowProps = Omit<ViewProps, 'children' | 'style'> & {
+  actions?: ReactNode;
   artist: string;
   artworkSource?: ImageProps['source'];
+  compactVote?: boolean;
+  dragHandleProps?: ViewProps;
   duration: string;
   mode?: TrackRowMode;
   onVotePress?: PressableProps['onPress'];
+  rank?: number;
+  status?: string;
   style?: StyleProp<CardRowLayoutStyle>;
   title: string;
+  voteCount?: number;
   voteState?: VoteButtonState;
 };
 
 export function TrackRow({
+  actions,
   artist,
   artworkSource,
+  compactVote = false,
+  dragHandleProps,
   duration,
   mode = 'default',
   onVotePress,
+  rank,
+  status,
   style,
   testID,
   title,
+  voteCount,
   voteState = 'available',
   ...viewProps
 }: TrackRowProps) {
@@ -251,13 +275,16 @@ export function TrackRow({
       isDragging && styles.draggingRow,
     ]}
   >
-    {isDragging ? <AppIcon
-      icon={DragDropVerticalIcon}
-      size="standard"
-      tone="default"
-      label="Drag track"
+    {typeof rank === 'number' ? <AppText variant="navigationLabel" color="text.secondary" style={styles.trackRank}>{rank}</AppText> : null}
+    {isDragging ? <View
+      {...dragHandleProps}
+      accessibilityLabel={dragHandleProps?.accessibilityLabel ?? 'Reorder track'}
+      accessibilityRole={dragHandleProps?.accessibilityRole ?? 'adjustable'}
       testID={testID ? `${testID}-drag-handle` : undefined}
-    /> : null}
+      style={styles.dragHandle}
+    >
+      <AppIcon icon={DragDropVerticalIcon} size="standard" tone="default" />
+    </View> : null}
     <Artwork
       fallbackColor={isPlaying ? colors.action.primary : colors.category.secondary}
       source={artworkSource}
@@ -266,9 +293,11 @@ export function TrackRow({
     />
     <View style={styles.compactCopy}>
       <AppText variant="navigationLabel" numberOfLines={1}>{title}</AppText>
-      <AppText variant="caption" color="text.muted" numberOfLines={1}>{artist}</AppText>
+      <AppText variant="caption" color="text.muted" numberOfLines={1}>{artist}{typeof voteCount === 'number' ? ` · ${voteCount} votes` : ''}</AppText>
+      {status ? <AppText variant="caption" color="action.secondary" numberOfLines={1}>{status}</AppText> : null}
     </View>
     {mode === 'vote' ? <VoteButton
+      compact={compactVote}
       onPress={onVotePress}
       state={voteState}
       testID={testID ? `${testID}-vote` : undefined}
@@ -279,6 +308,7 @@ export function TrackRow({
     >
       {isPlaying ? 'Playing' : duration}
     </AppText>}
+    {actions}
   </View>;
 }
 
@@ -371,6 +401,16 @@ const styles = StyleSheet.create({
     gap: spacing[4],
     overflow: 'hidden',
   },
+  trackRank: {
+    width: 20,
+    textAlign: 'center',
+  },
+  dragHandle: {
+    width: layout.minimumTouchTarget,
+    height: layout.minimumTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   userCard: {
     width: '100%',
     maxWidth: 360,
@@ -382,6 +422,14 @@ const styles = StyleSheet.create({
     padding: spacing[16],
     borderRadius: radius.card,
     backgroundColor: colors.background.surface,
+  },
+  userCardIdentity: {
+    minWidth: 0,
+    minHeight: layout.minimumTouchTarget,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[12],
   },
   eventCard: {
     width: '100%',
@@ -447,8 +495,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.surface,
   },
   draggingRow: {
-    borderWidth: 2,
-    borderColor: colors.action.secondary,
+    backgroundColor: colors.background.surface,
   },
   trackArtwork: {
     width: spacing[48],

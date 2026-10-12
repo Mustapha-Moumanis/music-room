@@ -22,11 +22,13 @@ import { colors, layout, radius, spacing, typography } from '../theme';
 
 it('matches both User Card relationships and forwards the add-friend action', () => {
   const onActionPress = jest.fn();
+  const onPress = jest.fn();
   const stranger = render(<UserCard
     initials="OM"
     meta="3 mutual interests"
     name="Omar Saadi"
     onActionPress={onActionPress}
+    onPress={onPress}
     testID="user"
   />);
 
@@ -50,6 +52,8 @@ it('matches both User Card relationships and forwards the add-friend action', ()
 
   fireEvent.press(stranger.getByTestId('user-action'));
   expect(onActionPress).toHaveBeenCalledTimes(1);
+  fireEvent.press(stranger.getByTestId('user-profile'));
+  expect(onPress).toHaveBeenCalledTimes(1);
 
   const friend = render(<UserCard
     initials="NA"

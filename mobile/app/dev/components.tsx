@@ -68,6 +68,7 @@ import { colors, radius, spacing } from '../../src/theme';
 
 const variants: Array<{ value: ButtonVariant; label: string; buttonLabel: string }> = [
   { value: 'primary', label: 'Primary', buttonLabel: 'Continue' },
+  { value: 'accent', label: 'Accent', buttonLabel: 'Add event' },
   { value: 'secondary', label: 'Secondary', buttonLabel: 'Secondary' },
   { value: 'ghost', label: 'Ghost', buttonLabel: 'Ghost' },
   { value: 'danger', label: 'Danger', buttonLabel: 'Remove' },

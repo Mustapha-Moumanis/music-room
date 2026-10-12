@@ -21,6 +21,7 @@ export type VoteButtonProps = Omit<
   PressableProps,
   'accessibilityRole' | 'children' | 'disabled' | 'style'
 > & {
+  compact?: boolean;
   state?: VoteButtonState;
   style?: StyleProp<VoteButtonLayoutStyle>;
 };
@@ -58,6 +59,7 @@ const labelColors: Record<VoteButtonState, SemanticColorRole> = {
 export function VoteButton({
   accessibilityLabel,
   accessibilityState,
+  compact = false,
   state = 'available',
   style,
   ...pressableProps
@@ -78,13 +80,14 @@ export function VoteButton({
     style={({ pressed }) => [
       style,
       styles.base,
+      compact && styles.compact,
       state === 'disabled' && styles.disabled,
       { backgroundColor: backgrounds[state] },
       !isUnavailable && pressed && pressedFeedback,
     ]}
   >
     <AppText variant="buttonLabel" color={labelColors[state]}>
-      {labels[state]}
+      {compact ? (state === 'voted' ? 'Voted' : state === 'available' ? '+1' : labels[state]) : labels[state]}
     </AppText>
   </Pressable>;
 }
@@ -104,5 +107,9 @@ const styles = StyleSheet.create({
     opacity: 0.45,
     borderWidth: 1,
     borderColor: colors.border.subtle,
+  },
+  compact: {
+    width: 68,
+    paddingHorizontal: spacing[8],
   },
 });

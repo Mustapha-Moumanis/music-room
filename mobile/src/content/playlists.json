@@ -1,0 +1,54 @@
+{
+  "tracks": [
+    { "id": "better-off-alone", "title": "Better Off Alone", "artist": "The Midnight", "duration": "3:56" },
+    { "id": "night-drive", "title": "Night Drive", "artist": "FM-84", "duration": "3:56" },
+    { "id": "under-neon", "title": "Under Neon", "artist": "Chromatics", "duration": "4:12" },
+    { "id": "sweet-disposition", "title": "Sweet Disposition", "artist": "The Temper Trap", "duration": "3:51" }
+  ],
+  "featured": [
+    { "title": "Friends Tape", "meta": "4 members · 24 tracks", "tone": "teal", "target": "read-only" },
+    { "title": "Sunday Vinyl", "meta": "18 tracks · Soul / Jazz", "tone": "purple", "target": "details" }
+  ],
+  "community": { "title": "Desert Drive", "meta": "32 tracks · by Yassine" },
+  "owned": [
+    { "title": "Late Night Drive", "meta": "18 tracks · owned", "tone": "coral" },
+    { "title": "Soft Focus", "meta": "12 tracks · private", "tone": "coral" }
+  ],
+  "collaborating": [
+    { "title": "Friends Tape", "meta": "4 members · editing", "tone": "teal" },
+    { "title": "Studio Picks", "meta": "3 members · 9 tracks", "tone": "teal" }
+  ],
+  "createDefaults": {
+    "name": "Late Night Drive",
+    "description": "Warm synths for quiet roads",
+    "visibility": "Private",
+    "editAccess": "Invited only"
+  },
+  "visibilityOptions": [
+    { "value": "Public", "title": "Public", "badge": "Public", "description": "Anyone can find and play it." },
+    { "value": "Private", "title": "Private", "badge": "Private", "description": "Only people you invite can open it." }
+  ],
+  "editAccessOptions": [
+    { "value": "Everyone", "title": "Everyone with access", "badge": "Everyone", "description": "Anyone who can open it can edit." },
+    { "value": "Invited only", "title": "Invited collaborators", "badge": "Invited", "description": "Only invited collaborators can edit." }
+  ],
+  "details": {
+    "title": "Late Night Drive",
+    "meta": "18 tracks · 1h 12m · Private",
+    "description": "Warm synths, soft guitars, and a little neon for late roads."
+  },
+  "readOnly": { "title": "Friends Tape", "meta": "24 tracks · 4 members · read only" },
+  "editor": {
+    "instructions": "Drag the handle toward the top or bottom to change song placement. Swipe left to reveal Remove.",
+    "ownerSync": "Changes sync for everyone editing this playlist.",
+    "collaboratorSync": "Changes sync instantly for everyone in this playlist.",
+    "collaboratorPermissions": "You can add, move, and remove tracks, but only the owner can manage members or delete the playlist."
+  },
+  "addTrack": { "initialQuery": "midnight", "existingTrackIds": ["los-angeles"] },
+  "members": [
+    { "id": "owner", "initials": "SH", "name": "Souad Hilal", "role": "Owner" },
+    { "id": "nada", "initials": "NA", "name": "Nada Amrani", "role": "Collaborator" },
+    { "id": "omar", "initials": "OE", "name": "Omar El Idrissi", "role": "Invited" }
+  ],
+  "inviteCandidate": { "initials": "SB", "name": "Sara Benali", "role": "Friend" }
+}

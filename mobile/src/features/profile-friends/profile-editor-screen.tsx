@@ -1,29 +1,47 @@
-import { ArrowDown01Icon, ArrowLeft02Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowDown01Icon,
+  ArrowLeft02Icon,
+  CheckmarkCircle01Icon,
+  Upload03Icon,
+} from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
-import { type ComponentProps, type ReactNode, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ComponentProps,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Modal as NativeModal,
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import {
   AppIcon,
   AppText,
   Avatar,
-  BottomSheet,
   Button,
   MusicPreferenceChip,
   TextField,
 } from '../../components/ui';
 import { pressedFeedback } from '../../components/ui/interaction-feedback';
+import profileContent from '../../content/profile.json';
 import { profilePreferences } from '../../mocks/profile-friends-examples';
-import { colors, radius, spacing, type SemanticColorRole } from '../../theme';
+import { goBackOrReplace } from '../../lib/navigation';
+import { colors, radius, shadows, spacing, type SemanticColorRole } from '../../theme';
 import { ProfileFriendsScreen } from './profile-friends-ui';
 
 type EditableVisibility = 'public' | 'friends' | 'private';
 type PreviewAudience = 'public' | 'friend';
+type VisibilityAnchor = { height: number; width: number; x: number; y: number };
 type VisibilityField =
   | 'photo'
   | 'displayName'
@@ -53,11 +71,13 @@ type ProfileValues = {
   birthday: string;
 };
 
-const visibilityOptions = [
-  { id: 'public', label: 'Public — visible to everyone' },
-  { id: 'friends', label: 'Friends — visible to accepted friends' },
-  { id: 'private', label: 'Private — visible only to you' },
-] as const;
+const visibilityOptions = profileContent.editor.visibilityOptions as Array<{ id: EditableVisibility; label: string }>;
+
+const ActiveVisibilityContext = createContext<VisibilityField | null>(null);
+const dropdownGap = 6;
+const dropdownMargin = spacing[16];
+const dropdownPreferredWidth = 184;
+const dropdownHeight = 140;
 
 const visibilityLabels: Record<EditableVisibility, string> = {
   public: 'Public',
@@ -67,45 +87,25 @@ const visibilityLabels: Record<EditableVisibility, string> = {
 
 const visibilityColors: Record<EditableVisibility, SemanticColorRole> = {
   public: 'action.secondary',
-  friends: 'category.secondary',
+  friends: 'text.primary',
   private: 'action.primary',
 };
 
-const initialVisibilities: Record<VisibilityField, EditableVisibility> = {
-  photo: 'public',
-  displayName: 'public',
-  username: 'public',
-  bio: 'public',
-  location: 'friends',
-  favoriteArtist: 'public',
-  musicPreferences: 'public',
-  recentlyPlayed: 'friends',
-  listeningActivity: 'friends',
-  instagram: 'friends',
-  email: 'private',
-  phone: 'private',
-  birthday: 'private',
-};
-
-const initialValues: ProfileValues = {
-  displayName: 'Souad Hilal',
-  username: 'souad',
-  bio: 'Frontend dev, night-drive playlists',
-  location: 'Benguerir, Morocco',
-  favoriteArtist: 'The Midnight',
-  recentlyPlayed: 'Better Off Alone · The Midnight',
-  listeningActivity: 'Share when you are listening',
-  instagram: '@souad.designs',
-  email: 'souad@musicroom.app',
-  phone: 'Not added',
-  birthday: 'Not added',
-};
+const initialVisibilities = profileContent.editor.initialVisibilities as Record<VisibilityField, EditableVisibility>;
+const initialValues = profileContent.editor.initialValues as ProfileValues;
 
 export function EditProfileScreen() {
   const router = useRouter();
-  const [activeVisibility, setActiveVisibility] = useState<VisibilityField | null>(null);
+  const { height: viewportHeight, width: viewportWidth } = useWindowDimensions();
+  const [visibilityDropdown, setVisibilityDropdown] = useState<{
+    anchor: VisibilityAnchor;
+    field: VisibilityField;
+  } | null>(null);
+  const activeVisibility = visibilityDropdown?.field ?? null;
   const [audience, setAudience] = useState<PreviewAudience>('public');
   const [photoChanged, setPhotoChanged] = useState(false);
+  const [photoFocused, setPhotoFocused] = useState(false);
+  const [photoHovered, setPhotoHovered] = useState(false);
   const [saved, setSaved] = useState(false);
   const [values, setValues] = useState(initialValues);
   const [visibilities, setVisibilities] = useState(initialVisibilities);
@@ -116,6 +116,46 @@ export function EditProfileScreen() {
     [preferences],
   );
 
+  const closeVisibility = useCallback(() => setVisibilityDropdown(null), []);
+
+  const openVisibility = (field: VisibilityField, anchor?: VisibilityAnchor) => {
+    setVisibilityDropdown((current) => ({
+      field,
+      anchor: anchor ?? (current?.field === field
+        ? current.anchor
+        : {
+            x: viewportWidth - dropdownMargin - 88,
+            y: spacing[64],
+            width: 88,
+            height: 36,
+          }),
+    }));
+  };
+
+  const dropdownLayout = useMemo(() => {
+    if (!visibilityDropdown) return null;
+    const width = Math.min(dropdownPreferredWidth, viewportWidth - dropdownMargin * 2);
+    const rightAlignedLeft = visibilityDropdown.anchor.x + visibilityDropdown.anchor.width - width;
+    const left = Math.max(
+      dropdownMargin,
+      Math.min(rightAlignedLeft, viewportWidth - dropdownMargin - width),
+    );
+    const below = visibilityDropdown.anchor.y + visibilityDropdown.anchor.height + dropdownGap;
+    const top = below + dropdownHeight <= viewportHeight - dropdownMargin
+      ? below
+      : Math.max(dropdownMargin, visibilityDropdown.anchor.y - dropdownGap - dropdownHeight);
+    return { left, top, width };
+  }, [visibilityDropdown, viewportHeight, viewportWidth]);
+
+  useEffect(() => {
+    if (!activeVisibility || typeof document === 'undefined') return undefined;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeVisibility();
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [activeVisibility, closeVisibility]);
+
   const updateValue = (field: keyof ProfileValues, value: string) => {
     setSaved(false);
     setValues((current) => ({ ...current, [field]: value }));
@@ -125,7 +165,7 @@ export function EditProfileScreen() {
     if (!activeVisibility) return;
     setSaved(false);
     setVisibilities((current) => ({ ...current, [activeVisibility]: visibility }));
-    setActiveVisibility(null);
+    closeVisibility();
   };
 
   const togglePreference = (preference: string) => {
@@ -143,15 +183,18 @@ export function EditProfileScreen() {
     return visibility === 'public' || (audience === 'friend' && visibility === 'friends');
   };
 
-  const previewValue = (field: VisibilityField, value: string) => {
-    if (canAudienceSee(field)) return value;
-    return visibilities[field] === 'friends' ? 'Friends only' : 'Private';
-  };
-
-  return <>
+  return <ActiveVisibilityContext.Provider value={activeVisibility}>
     <ProfileFriendsScreen
       active="profile"
       bodyStyle={styles.editorBody}
+      footer={<View style={styles.actions}>
+        <Button variant="secondary" style={styles.actionButton} onPress={() => goBackOrReplace(router, '/profile')}>
+          Cancel
+        </Button>
+        <Button style={styles.actionButton} onPress={() => setSaved(true)}>
+          {saved ? 'Changes saved' : 'Save changes'}
+        </Button>
+      </View>}
       showNavigation={false}
       testID="edit-profile-screen"
     >
@@ -159,16 +202,15 @@ export function EditProfileScreen() {
         <Pressable
           accessibilityLabel="Go back"
           accessibilityRole="button"
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/profile')}
           style={({ pressed }) => [styles.headerButton, pressed && pressedFeedback]}
         >
           <AppIcon icon={ArrowLeft02Icon} size="standard" />
         </Pressable>
-        <AppText variant="h4" style={styles.headerTitle}>Edit profile</AppText>
+        <AppText variant="h4" color="action.primary" style={styles.headerTitle}>Edit profile</AppText>
       </View>
 
       <View style={styles.intro}>
-        <AppText variant="caption" color="action.primary">PROFILE SETTINGS</AppText>
         <AppText variant="bodySmall" color="text.secondary">
           Edit each piece of information, then choose exactly who can see it.
         </AppText>
@@ -176,26 +218,43 @@ export function EditProfileScreen() {
 
       <View style={styles.photoCard}>
         <View style={styles.photoRow}>
-          <Avatar initials="SH" size="large" />
+          <Pressable
+            accessibilityHint="Choose a JPG or PNG image"
+            accessibilityLabel={photoChanged ? 'Choose a different profile photo' : 'Upload profile photo'}
+            accessibilityRole="button"
+            onBlur={() => setPhotoFocused(false)}
+            onFocus={() => setPhotoFocused(true)}
+            onHoverIn={() => setPhotoHovered(true)}
+            onHoverOut={() => setPhotoHovered(false)}
+            onPress={() => {
+              setPhotoChanged(true);
+              setSaved(false);
+            }}
+            style={({ pressed }) => [styles.photoUpload, pressed && pressedFeedback]}
+            testID="profile-photo-upload"
+          >
+            <Avatar accessible={false} initials="SH" size="large" />
+            {photoHovered || photoFocused ? <View
+              pointerEvents="none"
+              style={styles.photoUploadOverlay}
+            >
+              <AppIcon icon={Upload03Icon} size="compact" />
+              <AppText variant="caption">Upload</AppText>
+            </View> : null}
+          </Pressable>
           <View style={styles.photoCopy}>
             <AppText variant="h5">Profile photo</AppText>
-            <AppText variant="caption" color="text.muted">JPG or PNG</AppText>
+            <AppText variant="caption" color={photoChanged ? 'action.secondary' : 'text.muted'}>
+              {photoChanged ? 'Photo ready' : 'JPG or PNG'}
+            </AppText>
           </View>
           <VisibilityControl
             field="photo"
             label="Profile photo"
             value={visibilities.photo}
-            onOpen={setActiveVisibility}
+            onOpen={openVisibility}
           />
         </View>
-        <Button
-          size="small"
-          variant="secondary"
-          style={styles.changePhotoButton}
-          onPress={() => setPhotoChanged(true)}
-        >
-          {photoChanged ? 'Photo ready' : 'Change photo'}
-        </Button>
       </View>
 
       <EditorSection
@@ -208,7 +267,7 @@ export function EditProfileScreen() {
           value={values.displayName}
           visibility={visibilities.displayName}
           onChangeText={(value) => updateValue('displayName', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <ProfileEditField
           field="username"
@@ -217,7 +276,7 @@ export function EditProfileScreen() {
           visibility={visibilities.username}
           autoCapitalize="none"
           onChangeText={(value) => updateValue('username', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <ProfileEditField
           field="bio"
@@ -226,7 +285,7 @@ export function EditProfileScreen() {
           visibility={visibilities.bio}
           multiline
           onChangeText={(value) => updateValue('bio', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <ProfileEditField
           field="location"
@@ -234,7 +293,7 @@ export function EditProfileScreen() {
           value={values.location}
           visibility={visibilities.location}
           onChangeText={(value) => updateValue('location', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
       </EditorSection>
 
@@ -248,14 +307,14 @@ export function EditProfileScreen() {
           value={values.favoriteArtist}
           visibility={visibilities.favoriteArtist}
           onChangeText={(value) => updateValue('favoriteArtist', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <View style={styles.field}>
           <FieldHeader
             field="musicPreferences"
             label="Music preferences"
             visibility={visibilities.musicPreferences}
-            onOpenVisibility={setActiveVisibility}
+            onOpenVisibility={openVisibility}
           />
           <View style={styles.preferenceChips}>
             {profilePreferences.map((preference) => <MusicPreferenceChip
@@ -274,7 +333,7 @@ export function EditProfileScreen() {
           visibility={visibilities.recentlyPlayed}
           multiline
           onChangeText={(value) => updateValue('recentlyPlayed', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <ProfileEditField
           field="listeningActivity"
@@ -283,7 +342,7 @@ export function EditProfileScreen() {
           visibility={visibilities.listeningActivity}
           multiline
           onChangeText={(value) => updateValue('listeningActivity', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
       </EditorSection>
 
@@ -298,7 +357,7 @@ export function EditProfileScreen() {
           visibility={visibilities.instagram}
           autoCapitalize="none"
           onChangeText={(value) => updateValue('instagram', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <ProfileEditField
           field="email"
@@ -308,7 +367,7 @@ export function EditProfileScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           onChangeText={(value) => updateValue('email', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <ProfileEditField
           field="phone"
@@ -317,7 +376,7 @@ export function EditProfileScreen() {
           visibility={visibilities.phone}
           keyboardType="phone-pad"
           onChangeText={(value) => updateValue('phone', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
         <ProfileEditField
           field="birthday"
@@ -325,7 +384,7 @@ export function EditProfileScreen() {
           value={values.birthday}
           visibility={visibilities.birthday}
           onChangeText={(value) => updateValue('birthday', value)}
-          onOpenVisibility={setActiveVisibility}
+          onOpenVisibility={openVisibility}
         />
       </EditorSection>
 
@@ -358,39 +417,31 @@ export function EditProfileScreen() {
           })}
         </View>
         <View style={styles.previewIdentity}>
-          <Avatar initials="SH" size="medium" />
+          {canAudienceSee('photo') ? <Avatar initials="SH" size="medium" /> : null}
           <View>
-            <AppText variant="h5">{values.displayName}</AppText>
-            <AppText variant="caption" color="text.muted">@{values.username}</AppText>
+            {canAudienceSee('displayName') ? <AppText variant="h5">{values.displayName}</AppText> : null}
+            {canAudienceSee('username') ? <AppText variant="caption" color="text.muted">@{values.username}</AppText> : null}
           </View>
         </View>
-        <AppText variant="bodySmall" color="text.secondary">{values.bio}</AppText>
-        <PreviewRow
+        {canAudienceSee('bio') ? <AppText variant="bodySmall" color="text.secondary">{values.bio}</AppText> : null}
+        {canAudienceSee('musicPreferences') ? <PreviewRow
           accent
           label="Music taste"
-          value={previewValue('musicPreferences', selectedPreferences.slice(0, 2).join(' · ') || 'Not selected')}
-        />
-        <PreviewRow label="Location" value={previewValue('location', values.location)} />
-        <PreviewRow label="Instagram" value={previewValue('instagram', values.instagram)} />
-        <PreviewRow label="Email" value={previewValue('email', values.email)} />
+          value={selectedPreferences.slice(0, 2).join(' · ') || 'Not selected'}
+        /> : null}
+        {canAudienceSee('location') ? <PreviewRow label="Location" value={values.location} /> : null}
+        {canAudienceSee('instagram') ? <PreviewRow label="Instagram" value={values.instagram} /> : null}
+        {canAudienceSee('email') ? <PreviewRow label="Email" value={values.email} /> : null}
         <AppText variant="caption" color="action.secondary">
-          Viewing as {audience === 'public' ? 'Public' : 'Friend'} · Hidden fields respect each visibility choice.
+          Viewing as {audience === 'public' ? 'Public' : 'Friend'} · Only visible fields are shown.
         </AppText>
       </View>
 
-      <View style={styles.actions}>
-        <Button variant="secondary" style={styles.actionButton} onPress={() => router.back()}>
-          Cancel
-        </Button>
-        <Button style={styles.actionButton} onPress={() => setSaved(true)}>
-          {saved ? 'Changes saved' : 'Save changes'}
-        </Button>
-      </View>
     </ProfileFriendsScreen>
 
     <NativeModal
-      animationType="slide"
-      onRequestClose={() => setActiveVisibility(null)}
+      animationType="fade"
+      onRequestClose={closeVisibility}
       transparent
       visible={activeVisibility !== null}
     >
@@ -398,19 +449,49 @@ export function EditProfileScreen() {
         <Pressable
           accessibilityLabel="Close visibility options"
           accessibilityRole="button"
-          onPress={() => setActiveVisibility(null)}
+          onPress={closeVisibility}
           style={StyleSheet.absoluteFill}
+          testID="profile-visibility-dropdown-backdrop"
         />
-        <BottomSheet
-          testID="profile-visibility-sheet"
-          type="picker"
-          title="Who can see this field?"
-          options={[...visibilityOptions]}
-          onOptionPress={(option) => updateVisibility(option.id as EditableVisibility)}
-        />
+        {dropdownLayout ? <View
+          accessibilityLabel="Visibility options"
+          accessibilityRole="radiogroup"
+          style={[styles.visibilityDropdown, dropdownLayout]}
+          testID="profile-visibility-dropdown"
+        >
+          {visibilityOptions.map((option) => {
+            const selected = activeVisibility
+              ? visibilities[activeVisibility] === option.id
+              : false;
+            return <Pressable
+              key={option.id}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected }}
+              onPress={() => updateVisibility(option.id)}
+              style={({ pressed }) => [
+                styles.visibilityOption,
+                selected && styles.visibilityOptionSelected,
+                pressed && pressedFeedback,
+              ]}
+              testID={`profile-visibility-dropdown-option-${option.id}`}
+            >
+              <AppText
+                variant="bodySmall"
+                color={selected ? 'text.primary' : 'text.secondary'}
+              >
+                {option.label}
+              </AppText>
+              {selected ? <AppIcon
+                icon={CheckmarkCircle01Icon}
+                size="compact"
+                tone="default"
+              /> : null}
+            </Pressable>;
+          })}
+        </View> : null}
       </View>
     </NativeModal>
-  </>;
+  </ActiveVisibilityContext.Provider>;
 }
 
 function EditorSection({ children, subtitle, title }: {
@@ -439,7 +520,7 @@ function ProfileEditField({
 > & {
   field: VisibilityField;
   label: string;
-  onOpenVisibility: (field: VisibilityField) => void;
+  onOpenVisibility: (field: VisibilityField, anchor?: VisibilityAnchor) => void;
   visibility: EditableVisibility;
 }) {
   return <View style={styles.field}>
@@ -456,7 +537,7 @@ function ProfileEditField({
 function FieldHeader({ field, label, onOpenVisibility, visibility }: {
   field: VisibilityField;
   label: string;
-  onOpenVisibility: (field: VisibilityField) => void;
+  onOpenVisibility: (field: VisibilityField, anchor?: VisibilityAnchor) => void;
   visibility: EditableVisibility;
 }) {
   return <View style={styles.fieldHeader}>
@@ -473,19 +554,35 @@ function FieldHeader({ field, label, onOpenVisibility, visibility }: {
 function VisibilityControl({ field, label, onOpen, value }: {
   field: VisibilityField;
   label: string;
-  onOpen: (field: VisibilityField) => void;
+  onOpen: (field: VisibilityField, anchor?: VisibilityAnchor) => void;
   value: EditableVisibility;
 }) {
+  const activeVisibility = useContext(ActiveVisibilityContext);
+  const controlRef = useRef<View>(null);
   const visibleLabel = visibilityLabels[value];
+  const expanded = activeVisibility === field;
+
+  const handleOpen = () => {
+    onOpen(field);
+    controlRef.current?.measureInWindow((x, y, width, height) => {
+      onOpen(field, { x, y, width, height });
+    });
+  };
 
   return <Pressable
+    ref={controlRef}
     accessibilityLabel={`Change ${label} visibility, currently ${visibleLabel}`}
-    accessibilityRole="button"
-    onPress={() => onOpen(field)}
-    style={({ pressed }) => [styles.visibilityControl, pressed && pressedFeedback]}
+    accessibilityRole="combobox"
+    accessibilityState={{ expanded }}
+    onPress={handleOpen}
+    style={({ pressed }) => [
+      styles.visibilityControl,
+      expanded && styles.visibilityControlExpanded,
+      pressed && pressedFeedback,
+    ]}
   >
-    <AppText variant="caption" color={visibilityColors[value]}>{visibleLabel}</AppText>
-    <AppIcon icon={ArrowDown01Icon} size="compact" tone="muted" />
+    <AppText variant="caption" color={expanded ? 'text.primary' : visibilityColors[value]}>{visibleLabel}</AppText>
+    <AppIcon icon={ArrowDown01Icon} size="compact" tone={expanded ? 'default' : 'muted'} />
   </Pressable>;
 }
 
@@ -530,8 +627,7 @@ const styles = StyleSheet.create({
   },
   photoCard: {
     width: '100%',
-    minHeight: 128,
-    gap: 10,
+    minHeight: 92,
     padding: spacing[12],
     borderRadius: radius.card,
     backgroundColor: colors.background.surface,
@@ -543,13 +639,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[12],
   },
+  photoUpload: {
+    width: spacing[64],
+    height: spacing[64],
+    borderRadius: radius.full,
+    overflow: 'hidden',
+  },
+  photoUploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    borderWidth: 2,
+    borderColor: colors.action.secondary,
+    borderRadius: radius.full,
+    backgroundColor: colors.background.app,
+  },
   photoCopy: {
     minWidth: 1,
     flex: 1,
     gap: 2,
-  },
-  changePhotoButton: {
-    alignSelf: 'flex-start',
   },
   section: {
     width: '100%',
@@ -584,6 +693,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     borderRadius: radius.medium,
     backgroundColor: colors.background.surface,
+  },
+  visibilityControlExpanded: {
+    borderColor: colors.category.secondary,
+    backgroundColor: colors.category.secondary,
   },
   preferenceChips: {
     width: '100%',
@@ -646,9 +759,15 @@ const styles = StyleSheet.create({
   },
   actions: {
     width: '100%',
-    height: spacing[48],
     flexDirection: 'row',
     gap: 10,
+    paddingTop: spacing[8],
+    paddingRight: spacing[16],
+    paddingBottom: spacing[12],
+    paddingLeft: spacing[16],
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+    backgroundColor: colors.background.app,
   },
   actionButton: {
     minWidth: 1,
@@ -656,8 +775,27 @@ const styles = StyleSheet.create({
   },
   modalRoot: {
     flex: 1,
+    backgroundColor: 'transparent',
+  },
+  visibilityDropdown: {
+    position: 'absolute',
+    padding: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    borderRadius: radius.medium,
+    backgroundColor: colors.background.surface,
+    ...shadows.floating,
+  },
+  visibilityOption: {
+    width: '100%',
+    height: 44,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.56)',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[12],
+    borderRadius: radius.small,
+  },
+  visibilityOptionSelected: {
+    backgroundColor: colors.category.secondary,
   },
 });

@@ -1,8 +1,9 @@
 import type { PropsWithChildren } from 'react';
-import { ScrollView, StyleSheet, View, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, layout, spacing } from '../../theme';
+import { ScrollSurface } from './scroll-surface';
 
 export type AppScreenProps = PropsWithChildren<{
   scrollable?: boolean;
@@ -33,13 +34,14 @@ export function AppScreen({
 
   return <SafeAreaView style={[styles.safeArea, style]} testID={testID}>
     {scrollable
-      ? <ScrollView
+      ? <ScrollSurface
           style={styles.scroll}
           contentContainerStyle={contentStyle}
+          continuationTestID={testID ? `${testID}-scroll-cue` : undefined}
           keyboardShouldPersistTaps={keyboardShouldPersistTaps}
         >
           {children}
-        </ScrollView>
+        </ScrollSurface>
       : <View style={contentStyle}>{children}</View>}
   </SafeAreaView>;
 }

@@ -4,7 +4,6 @@ import {
   Calendar03Icon,
   HeartIcon,
   Home01Icon,
-  MoreVerticalIcon,
   NextIcon,
   PauseIcon,
   PlayIcon,
@@ -57,7 +56,6 @@ export type PlayerAction =
   | 'repeat'
   | 'queue'
   | 'volume'
-  | 'more';
 
 function percentage(value: number): `${number}%` {
   const normalized = Number((Math.min(1, Math.max(0, value)) * 100).toFixed(2));
@@ -124,6 +122,7 @@ export type MiniPlayerProps = {
   artist: string;
   artworkSource?: ImageProps['source'];
   onFavoritePress?: PressableProps['onPress'];
+  onOpenPress?: PressableProps['onPress'];
   onPlayPausePress?: PressableProps['onPress'];
   progress?: number;
   state?: MiniPlayerState;
@@ -136,6 +135,7 @@ export function MiniPlayer({
   artist,
   artworkSource,
   onFavoritePress,
+  onOpenPress,
   onPlayPausePress,
   progress,
   state = 'playing',
@@ -144,21 +144,29 @@ export function MiniPlayer({
   title,
 }: MiniPlayerProps) {
   const isPlaying = state === 'playing';
-  const resolvedProgress = progress ?? (isPlaying ? 0.408 : 0.274);
+  const resolvedProgress = progress ?? 0.408;
 
   return <View testID={testID} style={[style, styles.miniPlayer]}>
     <View style={styles.miniPlayerCard}>
       <View style={styles.miniPlayerContent}>
         <View style={styles.miniPlayerRow}>
-          <PlayerArtwork
-            size={layout.minimumTouchTarget}
-            source={artworkSource}
-            testID={testID ? `${testID}-artwork` : undefined}
-          />
-          <View style={styles.miniTrackCopy}>
-            <AppText variant="bodySmall" numberOfLines={1}>{title}</AppText>
-            <AppText variant="caption" color="text.muted" numberOfLines={1}>{artist}</AppText>
-          </View>
+          <Pressable
+            accessibilityLabel={`Open Now Playing for ${title}`}
+            accessibilityRole="button"
+            onPress={onOpenPress}
+            testID={testID ? `${testID}-open` : undefined}
+            style={({ pressed }) => [styles.miniTrackArea, pressed && pressedFeedback]}
+          >
+            <PlayerArtwork
+              size={layout.minimumTouchTarget}
+              source={artworkSource}
+              testID={testID ? `${testID}-artwork` : undefined}
+            />
+            <View style={styles.miniTrackCopy}>
+              <AppText variant="bodySmall" numberOfLines={1}>{title}</AppText>
+              <AppText variant="caption" color="text.primary" numberOfLines={1}>{artist}</AppText>
+            </View>
+          </Pressable>
           <Pressable
             accessibilityLabel="Favorite track"
             accessibilityRole="button"
@@ -426,7 +434,6 @@ export type TopBarProps = {
   breakpoint?: WebBreakpoint;
   initials: string;
   onAccountPress?: PressableProps['onPress'];
-  onMorePress?: PressableProps['onPress'];
   searchProps?: Omit<SearchFieldProps, 'style'>;
   state?: TopBarState;
   style?: StyleProp<ChromeLayoutStyle>;
@@ -440,7 +447,6 @@ export function TopBar({
   breakpoint = 'desktop',
   initials,
   onAccountPress,
-  onMorePress,
   searchProps,
   state = 'default',
   style,
@@ -488,16 +494,6 @@ export function TopBar({
           <AppText variant="bodySmall" numberOfLines={1}>{accountName}</AppText>
           <AppText variant="caption" color="text.muted" numberOfLines={1}>{accountLabel}</AppText>
         </View>
-      </Pressable>
-      <Pressable
-        accessibilityLabel="More account options"
-        accessibilityRole="button"
-        hitSlop={spacing[12]}
-        onPress={onMorePress}
-        testID={testID ? `${testID}-more` : undefined}
-        style={({ pressed }) => [styles.topBarMore, pressed && pressedFeedback]}
-      >
-        <AppIcon icon={MoreVerticalIcon} size="compact" tone="muted" />
       </Pressable>
     </View>
   </View>;
@@ -587,7 +583,6 @@ export function WebPlayer({
       >
         <View style={[styles.volumeLevel, { width: percentage(volume) }]} />
       </View>
-      <IconControl action="more" icon={MoreVerticalIcon} label="More player options" onAction={onAction} testID={testID ? `${testID}-more` : undefined} />
     </View>
   </View>;
 }
@@ -603,7 +598,7 @@ const styles = StyleSheet.create({
   },
   miniPlayer: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 430,
     height: layout.miniPlayerHeight,
     alignItems: 'center',
   },
@@ -614,7 +609,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: spacing[4],
     overflow: 'hidden',
-    backgroundColor: colors.background.surface,
+    backgroundColor: colors.category.secondary,
   },
   miniPlayerContent: {
     width: '100%',
@@ -637,6 +632,14 @@ const styles = StyleSheet.create({
     gap: 1,
     overflow: 'hidden',
   },
+  miniTrackArea: {
+    minWidth: 0,
+    minHeight: layout.minimumTouchTarget,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   miniIconControl: {
     width: layout.minimumTouchTarget,
     height: layout.minimumTouchTarget,
@@ -656,7 +659,7 @@ const styles = StyleSheet.create({
   },
   bottomNavigation: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 430,
     height: layout.bottomNavigationHeight,
     flexDirection: 'row',
     alignItems: 'center',
@@ -838,12 +841,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[8],
     overflow: 'hidden',
-  },
-  topBarMore: {
-    width: 18,
-    height: layout.minimumTouchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   topBarAccountCopy: {
     width: 58,

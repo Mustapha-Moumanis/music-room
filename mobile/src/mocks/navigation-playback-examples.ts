@@ -5,45 +5,10 @@ import type {
   TopBarState,
   WebNavigationDestination,
 } from '../components/ui';
+import examples from '../content/dev-examples.json';
 
-export const miniPlayerStates: MiniPlayerState[] = ['playing', 'paused'];
-
-export const bottomNavigationStates: MobileNavigationDestination[] = [
-  'home',
-  'events',
-  'playlists',
-  'friends',
-  'profile',
-];
-
-export const webNavigationStates: WebNavigationDestination[] = [
-  'home',
-  'events',
-  'playlists',
-  'friends',
-  'settings',
-  'none',
-];
-
-export const topBarStates: TopBarState[] = ['default', 'search'];
-
-export const sidebarPlaylistExamples: SidebarPlaylist[] = [
-  {
-    id: 'late-night-drive',
-    meta: '18 tracks',
-    title: 'Late Night Drive',
-    tone: 'primary',
-  },
-  {
-    id: 'friends-tape',
-    meta: 'Collaborative',
-    title: 'Friends Tape',
-    tone: 'secondary',
-  },
-  {
-    id: 'sunday-vinyl',
-    meta: 'Soul · Jazz',
-    title: 'Sunday Vinyl',
-    tone: 'category',
-  },
-];
+export const miniPlayerStates = examples.navigation.miniPlayerStates as MiniPlayerState[];
+export const bottomNavigationStates = examples.navigation.mobileDestinations as MobileNavigationDestination[];
+export const webNavigationStates = examples.navigation.webDestinations as WebNavigationDestination[];
+export const topBarStates = examples.navigation.topBarStates as TopBarState[];
+export const sidebarPlaylistExamples = examples.navigation.sidebarPlaylists as SidebarPlaylist[];

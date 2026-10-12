@@ -1,32 +1,32 @@
 import { SquareLock01Icon } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Modal as NativeModal, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   AppIcon,
   AppText,
   Avatar,
   Button,
-  DateTimePicker,
   EventCard,
   LicenseBadge,
-  LocationPicker,
   SearchField,
-  Select,
   TextField,
   TrackRow,
   VisibilityBadge,
 } from '../../components/ui';
-import { pressedFeedback } from '../../components/ui/interaction-feedback';
+import { animateNextLayout, pressedFeedback } from '../../components/ui/interaction-feedback';
+import eventContent from '../../content/events.json';
 import { eventFriends, queuedTracks, suggestedTracks } from '../../mocks/track-vote-examples';
+import { goBackOrReplace } from '../../lib/navigation';
+import { usePlaybackStore } from '../../stores/playback.store';
 import { colors, radius, spacing } from '../../theme';
+import { EventScheduleFields } from './event-schedule-fields';
 import {
   ChoiceCard,
   EventHeader,
   EventScreen,
   RestrictionCard,
-  RuleCard,
   SectionRow,
   eventStyles,
 } from './track-vote-ui';
@@ -35,15 +35,16 @@ export function DiscoverEventsScreen() {
   const router = useRouter();
 
   return <EventScreen showNavigation testID="discover-events-screen">
-    <EventHeader title="Events" action onBack={() => router.back()} onAction={() => router.push('/events/create')} />
+    <EventHeader title="Events" action />
     <AppText variant="h2">Vote together.{`\n`}Hear what wins.</AppText>
+    <Button variant="accent" onPress={() => router.push('/events/create')}>Add event</Button>
     <SearchField placeholder="Search events" />
-    <SectionRow title="Live now" action="See all" />
+    <SectionRow title="Live now" />
     <EventCard
-      title="Rooftop Tape Night"
+      title={eventContent.discovery.live.title}
       state="live"
-      meta="Tonight · 20:00 · Benguerir"
-      attendeeSummary="24 listening · 8 tracks"
+      meta={eventContent.discovery.live.meta}
+      attendeeSummary={eventContent.discovery.live.attendeeSummary}
       onPress={() => router.push('/events/details')}
       testID="live-event-card"
     />
@@ -55,10 +56,10 @@ export function DiscoverEventsScreen() {
     >
       <View style={styles.upcomingArtwork} />
       <View style={styles.flexCopy}>
-        <AppText variant="navigationLabel">Analog Sundays</AppText>
-        <AppText variant="caption" color="text.muted">Sat · 18:00 · 12 going</AppText>
+        <AppText variant="navigationLabel">{eventContent.discovery.upcoming.title}</AppText>
+        <AppText variant="caption" color="text.muted">{eventContent.discovery.upcoming.meta}</AppText>
       </View>
-      <AppText variant="caption" color="text.muted">PUBLIC</AppText>
+      <AppText variant="caption" color="text.muted">{eventContent.discovery.upcoming.visibility}</AppText>
     </Pressable>
   </EventScreen>;
 }
@@ -67,17 +68,15 @@ export function EventDetailsScreen() {
   const router = useRouter();
 
   return <EventScreen testID="event-details-screen">
-    <EventHeader title="Event details" onBack={() => router.back()} />
+    <EventHeader title="Event details" onBack={() => goBackOrReplace(router, '/events')} />
     <View style={styles.eventHero}>
       <View style={styles.heroCircle} />
       <View style={styles.heroCard} />
       <View style={styles.heroTape} />
     </View>
-    <AppText variant="h2">Rooftop Tape Night</AppText>
-    <AppText color="text.secondary">A public listening session where guests suggest tracks and vote the queue up in real time.</AppText>
-    <InfoLine label="Benguerir · within 250 m" />
-    <InfoLine label="Tonight · 20:00–23:00" />
-    <InfoLine label="24 participants" />
+    <AppText variant="h2">{eventContent.details.title}</AppText>
+    <AppText color="text.secondary">{eventContent.details.description}</AppText>
+    {eventContent.details.information.map((label) => <InfoLine key={label} label={label} />)}
     <View style={eventStyles.wrap}>
       <VisibilityBadge type="public" />
       <LicenseBadge type="location" />
@@ -98,20 +97,19 @@ function CreateEventIntro({ step, title, description }: { step: string; title: s
 
 export function CreateEventBasicScreen() {
   const router = useRouter();
-  const [name, setName] = useState('Rooftop Tape Night');
-  const [description, setDescription] = useState('Late-night listening with friends');
+  const [name, setName] = useState(eventContent.create.defaults.name);
+  const [description, setDescription] = useState(eventContent.create.defaults.description);
 
   return <EventScreen testID="create-event-basic-screen">
-    <EventHeader title="Create event" onBack={() => router.back()} />
-    <CreateEventIntro
-      step="Step 1 of 4"
-      title="Start with the basics"
-      description="Give people enough context to understand what kind of listening session this is."
-    />
+    <EventHeader title="Create event" onBack={() => goBackOrReplace(router, '/events')} />
+    <CreateEventIntro {...eventContent.create.steps[0]} />
     <View style={eventStyles.form}>
       <TextField label="Event name" value={name} onChangeText={setName} />
       <TextField label="Short description" value={description} onChangeText={setDescription} />
-      <Select label="Event type" value="Track Vote" />
+      <View style={styles.eventType}>
+        <View style={styles.flexCopy}><AppText variant="navigationLabel">Track Vote</AppText><AppText variant="caption" color="text.muted">Participants suggest tracks and vote the queue.</AppText></View>
+        <AppText variant="caption" color="action.secondary">EVENT TYPE</AppText>
+      </View>
     </View>
     <View style={eventStyles.grow} />
     <Button onPress={() => router.push('/events/create/visibility')}>Continue</Button>
@@ -120,19 +118,13 @@ export function CreateEventBasicScreen() {
 
 export function CreateEventVisibilityScreen() {
   const router = useRouter();
-  const [visibility, setVisibility] = useState<'Public' | 'Friends' | 'Private'>('Public');
+  const [visibility, setVisibility] = useState<'Public' | 'Private'>('Public');
 
   return <EventScreen testID="create-event-visibility-screen">
-    <EventHeader title="Create event" onBack={() => router.back()} />
-    <CreateEventIntro
-      step="Step 2 of 4"
-      title="Who can find it?"
-      description="Choose how this event appears to other people. You can still invite friends directly."
-    />
+    <EventHeader title="Create event" onBack={() => goBackOrReplace(router, '/events/create')} />
+    <CreateEventIntro {...eventContent.create.steps[1]} />
     <View accessibilityRole="radiogroup" style={eventStyles.form}>
-      <ChoiceCard title="Public" badge="Public" description="Anyone can discover and join." selected={visibility === 'Public'} onPress={() => setVisibility('Public')} />
-      <ChoiceCard title="Friends only" badge="Friends" description="Only your friends can find it." selected={visibility === 'Friends'} onPress={() => setVisibility('Friends')} />
-      <ChoiceCard title="Private" badge="Private" description="Only invited people can open it." selected={visibility === 'Private'} onPress={() => setVisibility('Private')} />
+      {eventContent.create.visibilityOptions.map((option) => <ChoiceCard key={option.value} {...option} selected={visibility === option.value} onPress={() => setVisibility(option.value as 'Public' | 'Private')} />)}
     </View>
     <View style={eventStyles.grow} />
     <Button onPress={() => router.push('/events/create/voting-rules')}>Continue</Button>
@@ -141,24 +133,13 @@ export function CreateEventVisibilityScreen() {
 
 export function CreateEventVotingRulesScreen() {
   const router = useRouter();
-  const [rules, setRules] = useState(() => new Set(['invite', 'location', 'time']));
-  const toggle = (rule: string) => setRules((current) => {
-    const next = new Set(current);
-    if (next.has(rule)) next.delete(rule); else next.add(rule);
-    return next;
-  });
+  const [rule, setRule] = useState<'everyone' | 'invite' | 'place-time'>('place-time');
 
   return <EventScreen testID="create-event-voting-rules-screen">
-    <EventHeader title="Create event" onBack={() => router.back()} />
-    <CreateEventIntro
-      step="Step 3 of 4"
-      title="Set voting rules"
-      description="Control who can vote. These checks happen before a vote is accepted."
-    />
-    <View style={eventStyles.form}>
-      <RuleCard title="Invite required" badge="Invite only" description="Only invited participants can vote." selected={rules.has('invite')} onPress={() => toggle('invite')} />
-      <RuleCard title="Location check" badge="Location" description="Require voters to be physically near the event." selected={rules.has('location')} onPress={() => toggle('location')} />
-      <RuleCard title="Time window" badge="Time window" description="Only allow votes during the configured event time." selected={rules.has('time')} onPress={() => toggle('time')} />
+    <EventHeader title="Create event" onBack={() => goBackOrReplace(router, '/events/create/visibility')} />
+    <CreateEventIntro {...eventContent.create.steps[2]} />
+    <View accessibilityRole="radiogroup" style={eventStyles.form}>
+      {eventContent.create.votingRuleOptions.map((option) => <ChoiceCard key={option.value} {...option} selected={rule === option.value} onPress={() => setRule(option.value as 'everyone' | 'invite' | 'place-time')} />)}
     </View>
     <AppText variant="bodySmall" color="text.secondary">These restrictions are shown explicitly so the permission model stays clear in the prototype.</AppText>
     <View style={eventStyles.grow} />
@@ -170,18 +151,9 @@ export function CreateEventScheduleScreen() {
   const router = useRouter();
 
   return <EventScreen testID="create-event-schedule-screen">
-    <EventHeader title="Create event" onBack={() => router.back()} />
-    <CreateEventIntro
-      step="Step 4 of 4"
-      title="Where and when?"
-      description="Finish the event by defining the permitted place and time window."
-    />
-    <View style={eventStyles.form}>
-      <LocationPicker label="Event location" value="Benguerir, Morocco" />
-      <DateTimePicker label="Start" value="Oct 18 · 20:00" />
-      <DateTimePicker label="End" value="Oct 18 · 23:00" />
-      <Select label="Voting radius" value="250 m" />
-    </View>
+    <EventHeader title="Create event" onBack={() => goBackOrReplace(router, '/events/create/voting-rules')} />
+    <CreateEventIntro {...eventContent.create.steps[3]} />
+    <EventScheduleFields />
     <View style={eventStyles.grow} />
     <Button onPress={() => router.replace('/events/owner')}>Publish event</Button>
   </EventScreen>;
@@ -189,29 +161,46 @@ export function CreateEventScheduleScreen() {
 
 export function ParticipantEventRoomScreen() {
   const router = useRouter();
+  const startPlayback = usePlaybackStore((state) => state.start);
   const [votes, setVotes] = useState<Set<string>>(() => new Set());
-  const vote = (id: string) => setVotes((current) => {
-    const next = new Set(current);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
-  });
+  const vote = (id: string) => {
+    animateNextLayout();
+    setVotes((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const baseVotes = eventContent.baseVotes as Record<string, number>;
+  const rankedTracks = [...queuedTracks].sort((a, b) => (baseVotes[b.id] + Number(votes.has(b.id))) - (baseVotes[a.id] + Number(votes.has(a.id))));
 
   return <EventScreen showMiniPlayer showNavigation testID="participant-event-room-screen">
-    <EventHeader title="Rooftop Tape Night" action onBack={() => router.back()} />
+    <EventHeader title={eventContent.details.title} action onBack={() => goBackOrReplace(router, '/events/details')} />
     <AppText variant="navigationLabel" color="action.primary">● LIVE · 24 listening</AppText>
-    <View style={styles.nowPlaying}>
+    <Pressable
+      accessibilityLabel={`Open ${eventContent.nowPlaying.title} in Now Playing`}
+      accessibilityRole="button"
+      onPress={() => {
+        startPlayback();
+        router.push('/player');
+      }}
+      style={({ pressed }) => [styles.nowPlaying, pressed && pressedFeedback]}
+    >
       <View style={styles.nowPlayingArtwork} />
       <View style={styles.flexCopy}>
         <AppText variant="caption" color="action.primary">NOW PLAYING</AppText>
-        <AppText variant="navigationLabel">Better Off Alone</AppText>
-        <AppText variant="caption" color="text.muted">The Midnight</AppText>
+        <AppText variant="navigationLabel">{eventContent.nowPlaying.title}</AppText>
+        <AppText variant="caption" color="text.muted">{eventContent.nowPlaying.artist}</AppText>
       </View>
-    </View>
+    </Pressable>
     <SectionRow title="Vote the queue" action="Suggest track" onAction={() => router.push('/events/suggest')} />
-    {queuedTracks.map((track) => <TrackRow
+    {rankedTracks.map((track, index) => <TrackRow
       key={track.id}
       {...track}
+      compactVote
       mode="vote"
+      rank={index + 1}
+      voteCount={baseVotes[track.id] + Number(votes.has(track.id))}
       voteState={votes.has(track.id) ? 'voted' : 'available'}
       onVotePress={() => vote(track.id)}
       testID={`queue-${track.id}`}
@@ -222,40 +211,59 @@ export function ParticipantEventRoomScreen() {
 export function OwnerEventRoomScreen() {
   const router = useRouter();
   const [ended, setEnded] = useState(false);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
+  const voteCounts = eventContent.baseVotes as Record<string, number>;
 
   return <EventScreen showMiniPlayer showNavigation testID="owner-event-room-screen">
-    <EventHeader title="Rooftop Tape Night" onBack={() => router.back()} />
+    <EventHeader title={eventContent.details.title} onBack={() => goBackOrReplace(router, '/events')} />
     <AppText variant="navigationLabel" color="action.primary">LIVE · OWNER MODE</AppText>
     <SectionRow title="Top voted" />
-    {queuedTracks.slice(0, 2).map((track) => <TrackRow key={track.id} {...track} mode="vote" />)}
+    {queuedTracks.map((track, index) => <TrackRow key={track.id} {...track} rank={index + 1} voteCount={voteCounts[track.id]} />)}
     <SectionRow title="Owner controls" />
-    <Button variant="secondary" onPress={() => router.push('/events/invite')}>Invite friends</Button>
-    <Button variant="secondary" onPress={() => router.push('/events/suggest')}>Suggest track</Button>
-    <Button variant="danger" onPress={() => setEnded(true)}>{ended ? 'Event ended' : 'End event'}</Button>
+    <View style={styles.ownerControls}>
+      <Button size="small" style={styles.flexButton} variant="secondary" onPress={() => router.push('/events/invite')}>Invite</Button>
+      <Button size="small" style={styles.flexButton} variant="secondary" onPress={() => router.push('/events/suggest')}>Suggest track</Button>
+    </View>
     <SectionRow title="Rules" />
     <View style={eventStyles.wrap}>
-      <LicenseBadge type="invite" />
       <LicenseBadge type="location" />
       <LicenseBadge type="time" />
     </View>
+    <View style={eventStyles.grow} />
+    <Button disabled={ended} variant="danger" onPress={() => setConfirmingEnd(true)}>{ended ? 'Event ended' : 'End event'}</Button>
+    <NativeModal animationType="fade" transparent visible={confirmingEnd} onRequestClose={() => setConfirmingEnd(false)}>
+      <Pressable accessibilityLabel="Close confirmation" accessibilityRole="button" style={styles.modalBackdrop} onPress={() => setConfirmingEnd(false)}>
+        <Pressable accessibilityRole="none" style={styles.confirmDialog} onPress={(event) => event.stopPropagation()}>
+          <AppText variant="h4">End this event?</AppText>
+          <AppText color="text.secondary">Voting will close for everyone. This cannot be undone.</AppText>
+          <View style={styles.confirmActions}>
+            <Button style={styles.flexButton} variant="secondary" onPress={() => setConfirmingEnd(false)}>Cancel</Button>
+            <Button style={styles.flexButton} variant="danger" onPress={() => { setEnded(true); setConfirmingEnd(false); }}>End event</Button>
+          </View>
+        </Pressable>
+      </Pressable>
+    </NativeModal>
   </EventScreen>;
 }
 
 export function InviteFriendsScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(['nada']));
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(eventContent.inviteDefaultIds));
   const visibleFriends = eventFriends.filter((friend) => friend.name.toLowerCase().includes(query.toLowerCase()));
-  const toggle = (id: string) => setSelected((current) => {
-    const next = new Set(current);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    return next;
-  });
+  const toggle = (id: string) => {
+    animateNextLayout();
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   return <EventScreen testID="invite-friends-screen">
-    <EventHeader title="Invite friends" onBack={() => router.back()} />
+    <EventHeader title="Invite friends" onBack={() => goBackOrReplace(router, '/events/owner')} />
     <SearchField placeholder="Search friends" value={query} onChangeText={setQuery} />
-    <SectionRow title="Friends" action="Invite selected" />
+    <SectionRow title="Friends" />
     {visibleFriends.map((friend) => {
       const isSelected = selected.has(friend.id);
       return <View key={friend.id} style={styles.friendCard}>
@@ -281,11 +289,11 @@ export function InviteFriendsScreen() {
 
 export function SuggestTrackScreen() {
   const router = useRouter();
-  const [query, setQuery] = useState('midnight');
-  const [selected, setSelected] = useState('los-angeles');
+  const [query, setQuery] = useState(eventContent.suggestionDefaults.query);
+  const [selected, setSelected] = useState(eventContent.suggestionDefaults.selectedId);
 
   return <EventScreen testID="suggest-track-screen">
-    <EventHeader title="Suggest track" onBack={() => router.back()} />
+    <EventHeader title="Suggest track" onBack={() => goBackOrReplace(router, '/events/room')} />
     <SearchField value={query} onChangeText={setQuery} />
     <SectionRow title="Results" />
     {suggestedTracks.map((track) => <Pressable
@@ -304,20 +312,19 @@ export function SuggestTrackScreen() {
 
 type RestrictionKind = 'invite' | 'location' | 'time' | 'permission' | 'not-found';
 
-const restrictions: Record<RestrictionKind, { title: string; description: string; action: string }> = {
-  invite: { title: 'Invite required', description: 'You need an invitation from the event owner before you can vote.', action: 'Ask owner for invite' },
-  location: { title: 'Outside permitted location', description: 'Move inside the allowed event area to unlock voting.', action: 'Check location' },
-  time: { title: 'Outside permitted time', description: "Voting is only available during the event's configured time window.", action: 'View event time' },
-  permission: { title: 'Location permission denied', description: 'Allow location access so Music Room can verify that you are at the event.', action: 'Open settings' },
-  'not-found': { title: 'Private event not found', description: 'This event may be private, removed, or unavailable to your account.', action: 'Back to events' },
-};
+const restrictions = eventContent.restrictions as Record<RestrictionKind, { title: string; description: string; action: string }>;
 
 function VotingRestrictionScreen({ kind }: { kind: RestrictionKind }) {
   const router = useRouter();
   const restriction = restrictions[kind];
+  const resolveRestriction = () => {
+    if (kind === 'permission') void Linking.openSettings();
+    else if (kind === 'not-found') router.replace('/events');
+    else router.replace('/events/details');
+  };
 
   return <EventScreen testID={`voting-restriction-${kind}-screen`}>
-    <EventHeader title="Voting unavailable" onBack={() => router.back()} />
+    <EventHeader title="Voting unavailable" onBack={() => goBackOrReplace(router, '/events/details')} />
     <AppText variant="navigationLabel" color="action.primary">VOTE RESTRICTED</AppText>
     <RestrictionCard title={restriction.title} description={restriction.description} />
     <View style={styles.restrictionNotice}>
@@ -326,7 +333,7 @@ function VotingRestrictionScreen({ kind }: { kind: RestrictionKind }) {
     </View>
     <View style={eventStyles.grow} />
     <View style={eventStyles.buttonStack}>
-      <Button onPress={() => kind === 'not-found' ? router.replace('/events') : undefined}>{restriction.action}</Button>
+      <Button onPress={resolveRestriction}>{restriction.action}</Button>
       <Button variant="secondary" onPress={() => router.replace('/events/room')}>Return to event</Button>
     </View>
   </EventScreen>;
@@ -347,6 +354,8 @@ function InfoLine({ label }: { label: string }) {
 
 const styles = StyleSheet.create({
   flexCopy: { minWidth: 0, flex: 1, gap: spacing[4] },
+  flexButton: { flex: 1 },
+  eventType: { width: '100%', minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: spacing[12], padding: spacing[16], borderRadius: radius.medium, backgroundColor: colors.background.surface },
   upcomingCard: {
     width: '100%', minHeight: 90, flexDirection: 'row', alignItems: 'center', gap: spacing[12],
     padding: spacing[12], borderWidth: 1, borderColor: colors.border.subtle,
@@ -361,6 +370,10 @@ const styles = StyleSheet.create({
   infoDot: { width: spacing[12], height: spacing[12], borderRadius: radius.full, borderWidth: 2, borderColor: colors.text.primary },
   nowPlaying: { alignSelf: 'flex-start', minWidth: 208, flexDirection: 'row', alignItems: 'center', gap: spacing[12], padding: spacing[12], borderRadius: radius.card, backgroundColor: colors.background.surface },
   nowPlayingArtwork: { width: 56, height: 56, borderRadius: radius.small, backgroundColor: colors.action.secondary },
+  ownerControls: { width: '100%', flexDirection: 'row', gap: spacing[8] },
+  modalBackdrop: { flex: 1, justifyContent: 'center', padding: spacing[24], backgroundColor: 'rgba(0, 0, 0, 0.68)' },
+  confirmDialog: { width: '100%', maxWidth: 382, alignSelf: 'center', gap: spacing[16], padding: spacing[24], borderRadius: radius.card, backgroundColor: colors.background.surface },
+  confirmActions: { width: '100%', flexDirection: 'row', gap: spacing[8] },
   friendCard: { width: '100%', minHeight: 88, flexDirection: 'row', alignItems: 'center', gap: spacing[12], padding: spacing[16], borderRadius: radius.card, backgroundColor: colors.background.surface },
   invitePill: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing[12], borderRadius: radius.full, backgroundColor: colors.background.app },
   invitePillSelected: { backgroundColor: colors.category.secondary },

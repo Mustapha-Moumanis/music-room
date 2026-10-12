@@ -1,4 +1,4 @@
-import { MoreVerticalIcon, PlayIcon, Search01Icon } from '@hugeicons/core-free-icons';
+import { PlayIcon, Search01Icon } from '@hugeicons/core-free-icons';
 import { Redirect } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -217,7 +217,6 @@ export default function FoundationsScreen() {
       <View style={styles.iconRow}>
         <IconSpecimen icon={Search01Icon} label="Search" />
         <IconSpecimen icon={PlayIcon} label="Play" tone="active" />
-        <IconSpecimen icon={MoreVerticalIcon} label="More" />
         <View style={styles.iconSpecimen}>
           <View style={styles.touchTarget}><View accessibilityLabel="System icon specimen" accessibilityRole="image" style={styles.systemGlyph} /></View>
           <AppText variant="caption" color="text.muted">System</AppText>

@@ -4,58 +4,22 @@ import type {
   ModalType,
   ToastTone,
 } from '../components/ui';
+import examples from '../content/dev-examples.json';
 
-export const modalExamples: Array<{
+export const modalExamples = examples.overlays.modals as Array<{
   confirmLabel: string;
   description: string;
   title: string;
   type: ModalType;
-}> = [
-  {
-    confirmLabel: 'Remove',
-    description: 'This change will update for every collaborator in real time.',
-    title: 'Remove this track?',
-    type: 'confirm',
-  },
-  {
-    confirmLabel: 'Send invite',
-    description: 'Search friends and invite them to this playlist.',
-    title: 'Invite friends',
-    type: 'form',
-  },
-];
+}>;
 
-export const bottomSheetExamples: Array<{
+export const bottomSheetExamples = examples.overlays.bottomSheets as Array<{
   options: BottomSheetOption[];
   title: string;
   type: BottomSheetType;
-}> = [
-  {
-    options: [
-      { id: 'add', label: 'Add to playlist' },
-      { id: 'save', label: 'Save track' },
-      { id: 'share', label: 'Share' },
-      { id: 'remove', label: 'Remove' },
-    ],
-    title: 'Track actions',
-    type: 'actions',
-  },
-  {
-    options: [
-      { id: 'public', label: 'Public' },
-      { id: 'friends', label: 'Friends only' },
-      { id: 'private', label: 'Private' },
-    ],
-    title: 'Choose visibility',
-    type: 'picker',
-  },
-];
+}>;
 
-export const toastExamples: Array<{
+export const toastExamples = examples.overlays.toasts as Array<{
   message: string;
   tone: ToastTone;
-}> = [
-  { message: 'Playlist updated', tone: 'success' },
-  { message: 'Nada is editing', tone: 'info' },
-  { message: 'Connection failed', tone: 'error' },
-];
+}>;

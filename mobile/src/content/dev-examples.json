@@ -1,0 +1,74 @@
+{
+  "cards": {
+    "users": [
+      { "initials": "OM", "meta": "3 mutual interests", "name": "Omar Saadi", "relation": "stranger" },
+      { "initials": "NA", "meta": "Friend · Indie / Soul", "name": "Nada Amrani", "relation": "friend" }
+    ],
+    "events": [
+      { "attendeeSummary": "24 listening · 8 tracks", "meta": "Tonight · 20:00 · Benguerir", "state": "default", "title": "Analog Sundays" },
+      { "attendeeSummary": "24 listening · 8 tracks", "meta": "Tonight · 20:00 · Benguerir", "state": "live", "title": "Rooftop Tape Night" },
+      { "attendeeSummary": "24 listening · 8 tracks", "meta": "Tonight · 20:00 · Benguerir", "state": "private", "title": "Analog Sundays" }
+    ],
+    "playlists": [
+      { "meta": "18 tracks · 1h 12m", "mode": "default", "title": "Sunday Vinyl" },
+      { "meta": "Collaborative · 4 members", "mode": "collaborative", "title": "Friends Tape" },
+      { "meta": "18 tracks · 1h 12m", "mode": "owned", "title": "Late Night Drive" }
+    ],
+    "tracks": [
+      { "artist": "The Midnight", "duration": "3:56", "mode": "default", "title": "Better Off Alone" },
+      { "artist": "The Midnight", "duration": "3:56", "mode": "playing", "title": "Better Off Alone" },
+      { "artist": "The Midnight", "duration": "3:56", "mode": "vote", "title": "Better Off Alone" },
+      { "artist": "The Midnight", "duration": "3:56", "mode": "dragging", "title": "Better Off Alone" }
+    ],
+    "friendRequests": [
+      { "initials": "NA", "name": "Nada Amrani", "state": "pending" },
+      { "initials": "NA", "name": "Nada Amrani", "state": "accepted" }
+    ]
+  },
+  "navigation": {
+    "miniPlayerStates": ["playing", "paused"],
+    "mobileDestinations": ["home", "events", "playlists", "friends", "profile"],
+    "webDestinations": ["home", "events", "playlists", "friends", "settings", "none"],
+    "topBarStates": ["default", "search"],
+    "sidebarPlaylists": [
+      { "id": "late-night-drive", "meta": "18 tracks", "title": "Late Night Drive", "tone": "primary" },
+      { "id": "friends-tape", "meta": "Collaborative", "title": "Friends Tape", "tone": "secondary" },
+      { "id": "sunday-vinyl", "meta": "Soul · Jazz", "title": "Sunday Vinyl", "tone": "category" }
+    ]
+  },
+  "overlays": {
+    "modals": [
+      { "confirmLabel": "Remove", "description": "This change will update for every collaborator in real time.", "title": "Remove this track?", "type": "confirm" },
+      { "confirmLabel": "Send invite", "description": "Search friends and invite them to this playlist.", "title": "Invite friends", "type": "form" }
+    ],
+    "bottomSheets": [
+      {
+        "options": [
+          { "id": "add", "label": "Add to playlist" },
+          { "id": "save", "label": "Save track" },
+          { "id": "share", "label": "Share" },
+          { "id": "remove", "label": "Remove" }
+        ],
+        "title": "Track actions",
+        "type": "actions"
+      },
+      {
+        "options": [
+          { "id": "public", "label": "Public" },
+          { "id": "friends", "label": "Friends only" },
+          { "id": "private", "label": "Private" }
+        ],
+        "title": "Choose visibility",
+        "type": "picker"
+      }
+    ],
+    "toasts": [
+      { "message": "Playlist updated", "tone": "success" },
+      { "message": "Nada is editing", "tone": "info" },
+      { "message": "Connection failed", "tone": "error" }
+    ]
+  },
+  "system": {
+    "skeletonLoaderTypes": ["card", "row"]
+  }
+}

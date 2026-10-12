@@ -12,20 +12,22 @@ Expo React Native app, and Artillery load tests. Scaffolding arrives in later ti
 
 ## Quickstart
 
-With Git, Node.js/npm, and Docker Compose installed, replace `<repository-url>`:
+With Git and Docker Compose installed, replace `<repository-url>`:
 
 ```sh
-git clone <repository-url> music-room && cd music-room && cp .env.example .env && make install && make up
+git clone <repository-url> music-room && cd music-room && cp .env.example .env && make up
 ```
 
-`make install` also creates missing `.env` and `mobile/.env` from available examples,
-without overwriting existing files. Empty packages are skipped; Compose commands
-print a notice until `docker-compose.yml` arrives in MCH-79.
+`make up` builds and starts PostgreSQL, the backend, and the Expo web preview. Open
+the app at `http://localhost:8081`; its API is available at `http://localhost:3000`.
+Run `make install` only when you want host-side Node.js dependencies for editor
+tooling or native Android development. It creates missing environment files from examples
+without overwriting existing files.
 
 ## Make targets
 
 `help`, `install`, `up`, `down`, `dev`, `logs`, `ps`, `restart`, `clean`, `test`,
-`seed`, `mobile` (browser preview), `mobile-android`, `apk`, `loadtest`, `check-secrets`. Run `make help` for descriptions.
+`seed`, `mobile` (containerized browser preview), `mobile-android`, `apk`, `loadtest`, `check-secrets`. Run `make help` for descriptions.
 Use `make loadtest SCENARIO=scenarios/vote.yml` to choose a scenario.
 `make clean` removes Docker volumes, including stored database data.
 

@@ -1,0 +1,82 @@
+{
+  "preferences": ["Indie", "Electronic", "Soul", "Alternative", "Jazz"],
+  "editablePreferences": ["Indie", "Electronic", "Soul", "Rock", "Hip-Hop", "Jazz", "Pop", "R&B", "Alternative"],
+  "friends": [
+    { "initials": "NA", "name": "Nada Amrani", "meta": "Listening to Friends Tape" },
+    { "initials": "NA", "name": "Omar El Idrissi", "meta": "Online now" },
+    { "initials": "NA", "name": "Sara Benali", "meta": "2 mutual playlists" }
+  ],
+  "recentSearches": [
+    { "initials": "OM", "name": "Yassine El Mansouri", "meta": "@yassine · 2 mutual friends" },
+    { "initials": "OM", "name": "Meryem Alaoui", "meta": "@meryem · 1 mutual friend" }
+  ],
+  "searchResults": [
+    { "initials": "OM", "name": "Yassine El Mansouri", "meta": "@yassine · 2 mutual friends", "relation": "stranger" },
+    { "initials": "NA", "name": "Yassine B.", "meta": "Already friends · online", "relation": "friend" },
+    { "initials": "OM", "name": "Yassine K.", "meta": "@yk_music · no mutual friends", "relation": "stranger" }
+  ],
+  "incomingRequests": [
+    { "initials": "NA", "name": "Yassine El Mansouri", "summary": "2 mutual friends" },
+    { "initials": "NA", "name": "Meryem Alaoui", "summary": "1 mutual friend" }
+  ],
+  "myProfile": {
+    "initials": "SH", "name": "Souad Hilal", "username": "souad",
+    "bio": "Frontend dev, night-drive playlists, and too much synth.",
+    "location": "Benguerir, Morocco", "favoriteArtist": "The Midnight",
+    "onRepeat": { "title": "Better Off Alone", "artist": "The Midnight", "meta": "From Late Night Drive" }
+  },
+  "viewerProfiles": {
+    "friend": {
+      "initials": "NA", "name": "Nada Amrani", "username": "nada", "bio": "Soul, house, and collaborative chaos.",
+      "location": "Marrakesh, Morocco", "favoriteArtist": "Sade", "instagram": "@nada.music",
+      "listeningActivity": "Friends Tape · active now",
+      "onRepeat": { "title": "No Ordinary Love", "artist": "Sade", "meta": "From Friends Tape" }
+    },
+    "stranger": {
+      "initials": "YE", "name": "Yassine El Mansouri", "username": "yassine", "bio": "Film photos, synths, and long playlists.",
+      "location": "Casablanca, Morocco", "favoriteArtist": "Tame Impala", "instagram": "@yassine",
+      "listeningActivity": "Listening now",
+      "onRepeat": { "title": "Let It Happen", "artist": "Tame Impala", "meta": "Public listening pick" }
+    }
+  },
+  "stats": [
+    { "key": "friends", "value": "42", "label": "Friends" },
+    { "key": "playlists", "value": "6", "label": "Playlists" },
+    { "key": "events", "value": "3", "label": "Events" }
+  ],
+  "editor": {
+    "visibilityOptions": [
+      { "id": "public", "label": "Public" },
+      { "id": "friends", "label": "Friends" },
+      { "id": "private", "label": "Private" }
+    ],
+    "initialVisibilities": {
+      "photo": "public", "displayName": "public", "username": "public", "bio": "public", "location": "friends",
+      "favoriteArtist": "public", "musicPreferences": "public", "recentlyPlayed": "friends", "listeningActivity": "friends",
+      "instagram": "friends", "email": "private", "phone": "private", "birthday": "private"
+    },
+    "initialValues": {
+      "displayName": "Souad Hilal", "username": "souad", "bio": "Frontend dev, night-drive playlists",
+      "location": "Benguerir, Morocco", "favoriteArtist": "The Midnight",
+      "recentlyPlayed": "Better Off Alone · The Midnight", "listeningActivity": "Share when you are listening",
+      "instagram": "@souad.designs", "email": "souad@musicroom.app", "phone": "Not added", "birthday": "Not added"
+    }
+  },
+  "settings": {
+    "profile": { "initials": "SH", "name": "Souad Hilal", "subtitle": "View and edit profile" },
+    "accountRows": [
+      { "key": "linked", "title": "Linked accounts", "subtitle": "Google, email and sign-in providers" },
+      { "key": "backend", "title": "Backend server", "subtitle": "Default server" }
+    ],
+    "playbackRows": [
+      { "key": "autoplay", "title": "Autoplay", "subtitle": "Continue with similar music", "defaultEnabled": true },
+      { "key": "mobileData", "title": "Download on mobile data", "subtitle": "Use Wi-Fi only", "defaultEnabled": false }
+    ],
+    "linkedAccounts": [
+      { "key": "google", "title": "Google account", "subtitle": "souad.hilal@gmail.com", "status": "Connected" },
+      { "key": "email", "title": "Email", "subtitle": "souad@musicroom.app", "status": "Verified" },
+      { "key": "password", "title": "Password", "subtitle": "Last changed recently" },
+      { "key": "backend", "title": "Backend", "subtitle": "Default Music Room server", "status": "Connected" }
+    ]
+  }
+}

@@ -1,17 +1,14 @@
 import {
   ArrowLeft02Icon,
   Globe02Icon,
-  MoreVerticalIcon,
   SquareLock01Icon,
   UserGroupIcon,
   ViewOffSlashIcon,
 } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
 import type { PropsWithChildren, ReactNode } from 'react';
-import { useState } from 'react';
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
@@ -23,28 +20,32 @@ import {
   AppIcon,
   AppText,
   BottomNavigation,
-  MiniPlayer,
+  HeaderOverflowMenu,
+  ScrollSurface,
   type MobileNavigationDestination,
 } from '../../components/ui';
 import { pressedFeedback } from '../../components/ui/interaction-feedback';
+import profileContent from '../../content/profile.json';
 import { colors, radius, spacing } from '../../theme';
+import { PlaybackMiniPlayer } from '../playback/playback-mini-player';
 
 export function ProfileFriendsScreen({
   active,
   bodyStyle,
   children,
+  footer,
   showMiniPlayer = false,
   showNavigation = true,
   testID,
 }: PropsWithChildren<{
   active: 'friends' | 'profile';
   bodyStyle?: StyleProp<ViewStyle>;
+  footer?: ReactNode;
   showMiniPlayer?: boolean;
   showNavigation?: boolean;
   testID: string;
 }>) {
   const router = useRouter();
-  const [playing, setPlaying] = useState(true);
 
   const navigate = (destination: MobileNavigationDestination) => {
     if (destination === 'home') router.replace('/home');
@@ -56,19 +57,16 @@ export function ProfileFriendsScreen({
 
   return <SafeAreaView testID={testID} style={styles.safeArea}>
     <View style={styles.phoneFrame}>
-      <ScrollView
+      <ScrollSurface
         style={styles.scroll}
         contentContainerStyle={[styles.body, bodyStyle]}
+        continuationTestID={`${testID}-scroll-cue`}
         keyboardShouldPersistTaps="handled"
       >
         {children}
-      </ScrollView>
-      {showMiniPlayer ? <MiniPlayer
-        title="Better Off Alone"
-        artist="The Midnight"
-        state={playing ? 'playing' : 'paused'}
-        onPlayPausePress={() => setPlaying((current) => !current)}
-      /> : null}
+      </ScrollSurface>
+      {footer}
+      {showMiniPlayer ? <PlaybackMiniPlayer /> : null}
       {showNavigation ? <BottomNavigation active={active} onNavigate={navigate} /> : null}
     </View>
   </SafeAreaView>;
@@ -76,35 +74,31 @@ export function ProfileFriendsScreen({
 
 export function MobileProfileHeader({
   action = false,
+  accountMenuSelection,
   onBack,
-  onAction,
   title,
 }: {
   action?: boolean;
-  onAction?: () => void;
-  onBack: () => void;
+  accountMenuSelection?: 'profile' | 'subscription' | 'settings';
+  onBack?: () => void;
   title: string;
 }) {
   return <View style={styles.header}>
-    <View style={styles.headerLeft}>
-      <Pressable
+    <View style={[styles.headerLeft, !onBack && styles.rootHeaderLeft]}>
+      {onBack ? <Pressable
         accessibilityLabel="Go back"
         accessibilityRole="button"
         onPress={onBack}
         style={({ pressed }) => [styles.headerIconButton, pressed && pressedFeedback]}
       >
         <AppIcon icon={ArrowLeft02Icon} size="standard" />
-      </Pressable>
-      <AppText variant="h4" numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
+      </Pressable> : null}
+      <AppText variant="h4" color="action.primary" numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
     </View>
-    {action ? <Pressable
-      accessibilityLabel="More options"
-      accessibilityRole="button"
-      onPress={onAction}
-      style={({ pressed }) => [styles.headerIconButton, pressed && pressedFeedback]}
-    >
-      <AppIcon icon={MoreVerticalIcon} size="standard" />
-    </Pressable> : <View style={styles.headerIconButton} />}
+    {action ? <HeaderOverflowMenu
+      accessibilityLabel="Open account menu"
+      selectedItem={accountMenuSelection}
+    /> : <View style={styles.headerIconButton} />}
   </View>;
 }
 
@@ -144,18 +138,16 @@ export function ProfileVisibilityRow({ level }: { level: VisibilityLevel }) {
   </View>;
 }
 
-export function ProfileInformationRow({ compact = false, hidden = false, label, value }: {
+export function ProfileInformationRow({ compact = false, label, value }: {
   compact?: boolean;
-  hidden?: boolean;
   label: string;
   value: string;
 }) {
   return <View style={[styles.informationRow, compact && styles.compactInformationRow]}>
     <View style={styles.informationCopy}>
       <AppText variant="caption" color="text.muted">{label}</AppText>
-      <AppText variant="bodySmall" color={hidden ? 'text.muted' : 'text.primary'} numberOfLines={1}>{value}</AppText>
+      <AppText variant="bodySmall" color="text.primary" numberOfLines={1}>{value}</AppText>
     </View>
-    {hidden ? <AppIcon icon={SquareLock01Icon} size="compact" tone="muted" /> : null}
   </View>;
 }
 
@@ -177,19 +169,30 @@ export function SectionHeading({ action, onAction, title }: {
   </View>;
 }
 
-export function ProfileStats() {
+export function ProfileStats({ onEventsPress, onFriendsPress, onPlaylistsPress }: {
+  onEventsPress?: () => void;
+  onFriendsPress?: () => void;
+  onPlaylistsPress?: () => void;
+}) {
+  const stats = Object.fromEntries(profileContent.stats.map((stat) => [stat.key, stat]));
   return <View style={styles.stats}>
-    <ProfileStat value="42" label="Friends" />
-    <ProfileStat value="6" label="Playlists" />
-    <ProfileStat value="3" label="Events" />
+    <ProfileStat value={stats.friends.value} label={stats.friends.label} onPress={onFriendsPress} />
+    <ProfileStat value={stats.playlists.value} label={stats.playlists.label} onPress={onPlaylistsPress} />
+    <ProfileStat value={stats.events.value} label={stats.events.label} onPress={onEventsPress} />
   </View>;
 }
 
-function ProfileStat({ label, value }: { label: string; value: string }) {
-  return <View style={styles.stat}>
+function ProfileStat({ label, onPress, value }: { label: string; onPress?: () => void; value: string }) {
+  const content = <>
     <AppText variant="h5">{value}</AppText>
     <AppText variant="caption" color="text.muted">{label}</AppText>
-  </View>;
+  </>;
+  return onPress ? <Pressable
+    accessibilityLabel={`Open ${label}`}
+    accessibilityRole="button"
+    onPress={onPress}
+    style={({ pressed }) => [styles.stat, pressed && pressedFeedback]}
+  >{content}</Pressable> : <View style={styles.stat}>{content}</View>;
 }
 
 export function IconNote({ icon, children }: PropsWithChildren<{ icon: ReactNode }>) {
@@ -231,7 +234,7 @@ const styles = StyleSheet.create({
   },
   phoneFrame: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 430,
     minHeight: 1,
     flex: 1,
     alignSelf: 'center',
@@ -261,6 +264,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: -10,
+  },
+  rootHeaderLeft: {
+    marginLeft: 0,
   },
   headerIconButton: {
     width: 44,
@@ -330,6 +336,7 @@ const styles = StyleSheet.create({
     minWidth: 52,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: spacing[16],
   },
   iconNote: {
     width: '100%',

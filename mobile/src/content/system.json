@@ -1,0 +1,37 @@
+{
+  "currentTrack": { "id": "better-off-alone", "title": "Better Off Alone", "artist": "The Midnight", "duration": "3:56" },
+  "home": {
+    "greeting": "Good evening.",
+    "headline": "Find something\nworth listening to.",
+    "dailyMix": { "eyebrow": "YOUR DAILY MIX", "title": "Analog After Dark", "description": "Picked from your recent listening" },
+    "recentlyPlayed": [
+      { "title": "Late Nights", "meta": "Playlist", "tone": "coral", "target": "details" },
+      { "title": "Friends Tape", "meta": "Collaborative", "tone": "teal", "target": "read-only" }
+    ]
+  },
+  "queuePreview": [
+    { "title": "Better Off Alone", "artist": "The Midnight", "duration": "3:56" },
+    { "title": "Night Drive", "artist": "FM-84", "duration": "3:56" },
+    { "title": "Under Neon", "artist": "Chromatics", "duration": "4:12" }
+  ],
+  "notifications": [
+    { "title": "Nada invited you to Friends Tape", "time": "2 min ago", "route": "/playlists/collaborate" },
+    { "title": "Your vote moved a track to #1", "time": "12 min ago", "route": "/events/room" },
+    { "title": "Playlist invite accepted", "time": "Yesterday", "route": "/playlists/details" }
+  ],
+  "toasts": [
+    { "message": "Playlist updated", "tone": "success" },
+    { "message": "Nada is editing", "tone": "info" },
+    { "message": "Connection failed", "tone": "error" }
+  ],
+  "emptyStates": [
+    { "type": "default", "title": "Nothing here yet", "description": "Your music will appear here when there is something to show.", "actionLabel": "Explore" },
+    { "type": "noResults", "title": "No matches yet", "description": "Try another search or clear filters.", "actionLabel": "Clear search" }
+  ],
+  "errorState": { "title": "Something went wrong", "description": "Try again or check your connection.", "actionLabel": "Retry" },
+  "offline": {
+    "title": "No internet\nconnection",
+    "description": "You can keep listening to downloaded tracks. Reconnect to refresh events, votes, friends, and collaborative playlists.",
+    "track": { "title": "Better Off Alone", "artist": "Downloaded", "duration": "3:56" }
+  }
+}

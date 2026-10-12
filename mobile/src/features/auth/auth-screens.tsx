@@ -9,7 +9,9 @@ import {
   PasswordField,
   TextField,
 } from '../../components/ui';
-import { pressedFeedback } from '../../components/ui/interaction-feedback';
+import { animateNextLayout, pressedFeedback } from '../../components/ui/interaction-feedback';
+import authContent from '../../content/auth.json';
+import { goBackOrReplace } from '../../lib/navigation';
 import { colors, radius, spacing } from '../../theme';
 import {
   AccountRow,
@@ -56,7 +58,7 @@ export function RegisterScreen() {
   const router = useRouter();
 
   return <AuthScreen testID="register-screen">
-    <AuthBackHeader onPress={() => router.back()} />
+    <AuthBackHeader onPress={() => goBackOrReplace(router, '/welcome')} />
     <AuthTitle
       eyebrow="New account"
       title="Create your account"
@@ -78,7 +80,7 @@ export function LoginScreen() {
   const router = useRouter();
 
   return <AuthScreen testID="login-screen">
-    <AuthBackHeader onPress={() => router.back()} />
+    <AuthBackHeader onPress={() => goBackOrReplace(router, '/welcome')} />
     <AuthTitle eyebrow="Welcome back" title="Sign in" description="Pick up where you left off." />
     <View style={authStyles.form}>
       <TextField label="Email" placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
@@ -103,7 +105,7 @@ export function CheckMailScreen() {
   const [resent, setResent] = useState(false);
 
   return <AuthScreen testID="check-mail-screen">
-    <AuthBackHeader onPress={() => router.back()} />
+    <AuthBackHeader onPress={() => goBackOrReplace(router, '/register')} />
     <AuthTitle eyebrow="One more step" title="Verify your email" />
     <AuthStatusCard
       icon="✉"
@@ -122,7 +124,7 @@ export function VerificationResultScreen() {
   const router = useRouter();
 
   return <AuthScreen testID="verification-result-screen">
-    <AuthBackHeader onPress={() => router.back()} />
+    <AuthBackHeader onPress={() => goBackOrReplace(router, '/check-mail')} />
     <AuthTitle eyebrow="Verified" title="You're ready" />
     <AuthStatusCard
       icon="✓"
@@ -155,7 +157,7 @@ export function ResetPasswordScreen() {
   const router = useRouter();
 
   return <AuthScreen testID="reset-password-screen">
-    <AuthBackHeader onPress={() => router.back()} />
+    <AuthBackHeader onPress={() => goBackOrReplace(router, '/forgot-password')} />
     <AuthTitle
       eyebrow="Choose a new one"
       title="Create new password"
@@ -181,8 +183,11 @@ export function GoogleSignInScreen() {
       description="Choose an account to connect to Music Room."
     />
     <View style={styles.accounts}>
-      <AccountRow initials="S" name="Souad Hilal" email="souad.hilal@gmail.com" onPress={continueWithAccount} />
-      <AccountRow initials="H" name="Hilal Souad" email="hilal.souad@gmail.com" onPress={continueWithAccount} />
+      {authContent.googleAccounts.map((account) => <AccountRow
+        key={account.email}
+        {...account}
+        onPress={continueWithAccount}
+      />)}
     </View>
     <AppText variant="bodySmall" color="text.muted">Music Room will only use your basic profile and email to create or sign in to your account.</AppText>
   </AuthScreen>;
@@ -201,14 +206,14 @@ export function BackendUrlScreen() {
     <View style={authStyles.form}>
       <TextField
         label="Backend URL"
-        defaultValue="http://192.168.1.42:8000"
+        defaultValue={authContent.backend.url}
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
       />
       <View style={styles.networkHint}>
         <View style={styles.networkDot} />
-        <AppText variant="caption" color="text.muted">Local network address detected</AppText>
+        <AppText variant="caption" color="text.muted">{authContent.backend.networkHint}</AppText>
       </View>
       <Button onPress={() => router.push('/backend-result')}>Test connection</Button>
       <Button variant="ghost" onPress={() => router.replace('/login')}>Use default server</Button>
@@ -225,12 +230,12 @@ export function BackendResultScreen() {
     <AuthTitle eyebrow="Connection test" title="Server status" />
     <AuthStatusCard
       icon="✓"
-      title="Connected successfully"
-      description="Music Room can reach your backend and received a valid response."
+      title={authContent.backend.statusTitle}
+      description={authContent.backend.statusDescription}
     />
     <View style={styles.serverSummary}>
       <AppText variant="caption" color="text.muted">Connected server</AppText>
-      <AppText variant="bodySmall">http://192.168.1.42:8000</AppText>
+      <AppText variant="bodySmall">{authContent.backend.url}</AppText>
     </View>
     <AuthActionStack>
       <Button onPress={() => router.replace('/login')}>Continue to Login</Button>
@@ -239,13 +244,12 @@ export function BackendResultScreen() {
   </AuthScreen>;
 }
 
-const preferenceOptions = ['Indie', 'Soul', 'Rock', 'Hip-Hop', 'Electronic', 'Jazz', 'Pop', 'Classical', 'R&B', 'Alternative'];
-
 export function MusicPreferencesScreen() {
   const router = useRouter();
-  const [selected, setSelected] = useState(() => new Set(['Indie', 'Soul', 'Electronic']));
+  const [selected, setSelected] = useState(() => new Set(authContent.defaultPreferences));
 
   const togglePreference = (preference: string) => {
+    animateNextLayout();
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(preference)) next.delete(preference);
@@ -255,7 +259,7 @@ export function MusicPreferencesScreen() {
   };
 
   return <AuthScreen compact testID="music-preferences-screen">
-    <AuthBackHeader label="Setup" onPress={() => router.back()} />
+    <AuthBackHeader label="Setup" onPress={() => goBackOrReplace(router, '/login')} />
     <OnboardingProgress step={1} />
     <AuthTitle
       eyebrow="Step 1 of 2"
@@ -263,7 +267,7 @@ export function MusicPreferencesScreen() {
       description="Pick a few genres you enjoy. You can change these anytime."
     />
     <View style={styles.preferenceChips}>
-      {preferenceOptions.map((preference) => <MusicPreferenceChip
+      {authContent.preferences.map((preference) => <MusicPreferenceChip
         key={preference}
         selected={selected.has(preference)}
         onPress={() => togglePreference(preference)}
@@ -285,10 +289,18 @@ export function ProfileSetupScreen() {
   const [photoMessage, setPhotoMessage] = useState(false);
   const [complete, setComplete] = useState(false);
 
-  const finish = () => setComplete(true);
+  const showPhotoMessage = () => {
+    animateNextLayout();
+    setPhotoMessage(true);
+  };
+  const finish = () => {
+    animateNextLayout();
+    setComplete(true);
+    router.replace('/home');
+  };
 
   return <AuthScreen compact testID="profile-setup-screen">
-    <AuthBackHeader label="Setup" onPress={() => router.back()} />
+    <AuthBackHeader label="Setup" onPress={() => goBackOrReplace(router, '/music-preferences')} />
     <OnboardingProgress step={2} />
     <AuthTitle
       eyebrow="Step 2 of 2"
@@ -296,11 +308,11 @@ export function ProfileSetupScreen() {
       description="Add a few details to personalize your profile. Everything here is optional."
     />
     <View style={authStyles.form}>
-      <AvatarUpload onPress={() => setPhotoMessage(true)} />
+      <AvatarUpload onPress={showPhotoMessage} />
       {photoMessage ? <AppText variant="caption" color="action.secondary">Photo picker will be connected in the profile milestone.</AppText> : null}
-      <TextField label="Display name" defaultValue="Souad Hilal" autoComplete="name" />
-      <AuthTextArea label="Short bio" placeholder="Tell people what you listen to..." />
-      <TextField label="Favorite artist" placeholder="Add an artist" />
+      <TextField label="Display name" defaultValue={authContent.profileSetup.displayName} autoComplete="name" />
+      <AuthTextArea label="Short bio" placeholder={authContent.profileSetup.bioPlaceholder} />
+      <TextField label="Favorite artist" placeholder={authContent.profileSetup.artistPlaceholder} />
     </View>
     {complete ? <AppText variant="bodySmall" color="action.secondary" accessibilityLiveRegion="polite">Setup complete. Your Music Room is ready.</AppText> : null}
     <AuthActionStack>

@@ -21,7 +21,7 @@ it('renders every Button specimen and the live example in development builds', (
   expect(screen.getByText('01. Buttons')).toBeTruthy();
   expect(screen.getByText('Reusable UI')).toBeTruthy();
 
-  for (const variant of ['primary', 'secondary', 'ghost', 'danger']) {
+  for (const variant of ['primary', 'accent', 'secondary', 'ghost', 'danger']) {
     for (const size of ['small', 'default']) {
       for (const state of ['default', 'active', 'disabled']) {
         expect(screen.getByTestId(`button-${variant}-${size}-${state}`)).toBeTruthy();

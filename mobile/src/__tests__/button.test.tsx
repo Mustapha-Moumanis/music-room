@@ -16,6 +16,12 @@ const variants: Record<ButtonVariant, {
     label: colors.text.onAccent,
     bordered: false,
   },
+  accent: {
+    active: colors.border.subtle,
+    background: colors.action.secondary,
+    label: colors.text.onAccent,
+    bordered: false,
+  },
   secondary: {
     active: colors.category.secondary,
     background: colors.background.surface,

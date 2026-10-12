@@ -1,14 +1,11 @@
 import {
   ArrowLeft02Icon,
-  MoreVerticalIcon,
   SquareLock01Icon,
 } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
 import type { PropsWithChildren } from 'react';
-import { useState } from 'react';
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
@@ -20,11 +17,13 @@ import {
   AppIcon,
   AppText,
   BottomNavigation,
-  MiniPlayer,
+  HeaderOverflowMenu,
+  ScrollSurface,
   type MobileNavigationDestination,
 } from '../../components/ui';
 import { pressedFeedback } from '../../components/ui/interaction-feedback';
 import { colors, radius, spacing } from '../../theme';
+import { PlaybackMiniPlayer } from '../playback/playback-mini-player';
 
 export function EventScreen({
   bodyStyle,
@@ -39,7 +38,6 @@ export function EventScreen({
   testID: string;
 }>) {
   const router = useRouter();
-  const [playing, setPlaying] = useState(true);
 
   const navigate = (destination: MobileNavigationDestination) => {
     if (destination === 'home') router.replace('/home');
@@ -51,19 +49,15 @@ export function EventScreen({
 
   return <SafeAreaView testID={testID} style={styles.safeArea}>
     <View style={styles.phoneFrame}>
-      <ScrollView
+      <ScrollSurface
         style={styles.scroll}
         contentContainerStyle={[styles.body, bodyStyle]}
+        continuationTestID={`${testID}-scroll-cue`}
         keyboardShouldPersistTaps="handled"
       >
         {children}
-      </ScrollView>
-      {showMiniPlayer ? <MiniPlayer
-        title="Better Off Alone"
-        artist="The Midnight"
-        state={playing ? 'playing' : 'paused'}
-        onPlayPausePress={() => setPlaying((current) => !current)}
-      /> : null}
+      </ScrollSurface>
+      {showMiniPlayer ? <PlaybackMiniPlayer /> : null}
       {showNavigation ? <BottomNavigation active="events" onNavigate={navigate} /> : null}
     </View>
   </SafeAreaView>;
@@ -71,35 +65,26 @@ export function EventScreen({
 
 export function EventHeader({
   action = false,
-  onAction,
   onBack,
   title,
 }: {
   action?: boolean;
-  onAction?: () => void;
-  onBack: () => void;
+  onBack?: () => void;
   title: string;
 }) {
   return <View style={styles.header}>
-    <View style={styles.headerLeft}>
-      <Pressable
+    <View style={[styles.headerLeft, !onBack && styles.rootHeaderLeft]}>
+      {onBack ? <Pressable
         accessibilityLabel="Go back"
         accessibilityRole="button"
         onPress={onBack}
         style={({ pressed }) => [styles.iconButton, pressed && pressedFeedback]}
       >
         <AppIcon icon={ArrowLeft02Icon} size="standard" />
-      </Pressable>
-      <AppText variant="h4" numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
+      </Pressable> : null}
+      <AppText variant="h4" color="action.primary" numberOfLines={1} style={styles.headerTitle}>{title}</AppText>
     </View>
-    {action ? <Pressable
-      accessibilityLabel="More options"
-      accessibilityRole="button"
-      onPress={onAction}
-      style={({ pressed }) => [styles.iconButton, pressed && pressedFeedback]}
-    >
-      <AppIcon icon={MoreVerticalIcon} size="standard" />
-    </Pressable> : null}
+    {action ? <HeaderOverflowMenu /> : null}
   </View>;
 }
 
@@ -198,7 +183,7 @@ export const eventStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background.app },
   phoneFrame: {
-    width: '100%', maxWidth: 390, minHeight: 1, flex: 1, alignSelf: 'center',
+    width: '100%', maxWidth: 430, minHeight: 1, flex: 1, alignSelf: 'center',
     backgroundColor: colors.background.app,
   },
   scroll: { flex: 1 },
@@ -211,6 +196,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'space-between',
   },
   headerLeft: { minWidth: 0, flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: -10 },
+  rootHeaderLeft: { marginLeft: 0 },
   headerTitle: { minWidth: 0, flex: 1 },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   sectionRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
