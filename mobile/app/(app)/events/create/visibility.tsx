@@ -1,1 +1,1 @@
-export { CreateEventVisibilityScreen as default } from '../../../../src/features/track-vote/track-vote-screens';
+export { CreateEventVisibilityScreen as default } from '../../../../src/features/track-vote/create-event-screens';

@@ -4,9 +4,7 @@ import {
   Pressable,
   StyleSheet,
   TextInput,
-  type NativeSyntheticEvent,
   type StyleProp,
-  type TextInputFocusEventData,
   type TextInputProps,
   View,
   type ViewStyle,
@@ -91,12 +89,12 @@ const FieldControl = forwardRef<TextInput, FieldControlProps>(function FieldCont
   const isMultiline = Boolean(inputProps.multiline);
   const errorMessage = typeof error === 'string' ? error : undefined;
 
-  const handleFocus = (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  const handleFocus: NonNullable<TextInputProps['onFocus']> = (event) => {
     setFocused(true);
     onFocus?.(event);
   };
 
-  const handleBlur = (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  const handleBlur: NonNullable<TextInputProps['onBlur']> = (event) => {
     setFocused(false);
     onBlur?.(event);
   };

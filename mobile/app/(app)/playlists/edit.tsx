@@ -1,1 +1,1 @@
-export { OwnerPlaylistEditorScreen as default } from '../../../src/features/playlists/playlist-screens';
+export { OwnerPlaylistEditorScreen as default } from '../../../src/features/playlists/playlist-editor-screens';

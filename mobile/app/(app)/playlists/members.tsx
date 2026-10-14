@@ -1,1 +1,1 @@
-export { PlaylistMembersScreen as default } from '../../../src/features/playlists/playlist-screens';
+export { PlaylistMembersScreen as default } from '../../../src/features/playlists/playlist-management-screens';

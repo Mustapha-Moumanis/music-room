@@ -15,6 +15,7 @@ export type ScrollSurfaceProps = PropsWithChildren<{
   keyboardShouldPersistTaps?: ScrollViewProps['keyboardShouldPersistTaps'];
   showContinuationCue?: boolean;
   style?: ScrollViewProps['style'];
+  testID?: ScrollViewProps['testID'];
 }>;
 
 export function ScrollSurface({
@@ -24,6 +25,7 @@ export function ScrollSurface({
   keyboardShouldPersistTaps,
   showContinuationCue = true,
   style,
+  testID,
 }: ScrollSurfaceProps) {
   const [contentHeight, setContentHeight] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -35,6 +37,7 @@ export function ScrollSurface({
 
   return <View style={styles.root}>
     <ScrollView
+      testID={testID}
       style={[styles.scroll, style]}
       contentContainerStyle={contentContainerStyle}
       keyboardShouldPersistTaps={keyboardShouldPersistTaps}

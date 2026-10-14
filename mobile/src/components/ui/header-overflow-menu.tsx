@@ -5,7 +5,7 @@ import {
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Modal as NativeModal,
   Pressable,
@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 
+import { useEscapeKey } from '../../lib/use-escape-key';
 import { useSessionStore } from '../../stores/session.store';
 import { colors, radius, shadows, spacing } from '../../theme';
 import { AppIcon, type AppIconData } from './app-icon';
@@ -65,14 +66,7 @@ export function HeaderOverflowMenu({
     return { left, top, width };
   }, [anchor, viewportHeight, viewportWidth]);
 
-  useEffect(() => {
-    if (!open || typeof document === 'undefined') return undefined;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMenu();
-    };
-    document.addEventListener('keydown', closeOnEscape);
-    return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [closeMenu, open]);
+  useEscapeKey(open, closeMenu);
 
   const openMenu = () => {
     setOpen(true);

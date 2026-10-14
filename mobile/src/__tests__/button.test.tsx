@@ -47,16 +47,16 @@ const sizes: Record<ButtonSize, number> = {
   default: spacing[48],
 };
 
-describe.each(Object.entries(variants) as Array<[ButtonVariant, (typeof variants)[ButtonVariant]]>)(
+describe.each(Object.entries(variants) as [ButtonVariant, (typeof variants)[ButtonVariant]][])(
   '%s Button',
   (variant, expected) => {
-    describe.each(Object.entries(sizes) as Array<[ButtonSize, number]>)('%s size', (size, height) => {
+    describe.each(Object.entries(sizes) as [ButtonSize, number][])('%s size', (size, height) => {
       it.each([
         ['default', false, false],
         ['active', true, false],
         ['disabled', false, true],
-      ] as const)('matches the Figma %s state', (state, pressed, disabled) => {
-        const view = render(<Button
+      ] as const)('matches the Figma %s state', async (state, pressed, disabled) => {
+        const view = await render(<Button
           variant={variant}
           size={size}
           disabled={disabled}
@@ -92,8 +92,8 @@ describe.each(Object.entries(variants) as Array<[ButtonVariant, (typeof variants
   },
 );
 
-it('defaults to the primary variant and default size', () => {
-  const view = render(<Button testID="button">Continue</Button>);
+it('defaults to the primary variant and default size', async () => {
+  const view = await render(<Button testID="button">Continue</Button>);
   expect(StyleSheet.flatten(view.getByTestId('button').props.style)).toEqual(expect.objectContaining({
     height: spacing[48],
     backgroundColor: colors.action.primary,
@@ -101,8 +101,8 @@ it('defaults to the primary variant and default size', () => {
   expect(StyleSheet.flatten(view.getByText('Continue').props.style).color).toBe(colors.text.onAccent);
 });
 
-it('owns button accessibility while preserving caller accessibility state', () => {
-  const view = render(<Button
+it('owns button accessibility while preserving caller accessibility state', async () => {
+  const view = await render(<Button
     testID="button"
     accessibilityLabel="Continue to the next step"
     accessibilityState={{ busy: true }}
@@ -117,11 +117,11 @@ it('owns button accessibility while preserving caller accessibility state', () =
   }));
 });
 
-it('forwards press and hover callbacks and applies active surfaces', () => {
+it('forwards press and hover callbacks and applies active surfaces', async () => {
   const onPress = jest.fn();
   const onHoverIn = jest.fn();
   const onHoverOut = jest.fn();
-  const view = render(<Button
+  const view = await render(<Button
     testID="button"
     onPress={onPress}
     onHoverIn={onHoverIn}
@@ -131,46 +131,44 @@ it('forwards press and hover callbacks and applies active surfaces', () => {
   </Button>);
 
   const button = view.getByTestId('button');
-  fireEvent.press(button);
-  fireEvent(button, 'hoverIn');
+  await fireEvent.press(button);
+  await fireEvent(button, 'hoverIn');
   expect(onPress).toHaveBeenCalledTimes(1);
   expect(onHoverIn).toHaveBeenCalledTimes(1);
   expect(StyleSheet.flatten(view.getByTestId('button').props.style).backgroundColor).toBe(colors.action.secondary);
 
-  fireEvent(button, 'hoverOut');
+  await fireEvent(button, 'hoverOut');
   expect(onHoverOut).toHaveBeenCalledTimes(1);
   expect(StyleSheet.flatten(view.getByTestId('button').props.style).backgroundColor).toBe(colors.action.primary);
 });
 
-it('uses the active surface during a native press', () => {
-  const view = render(<Button testID="button">Continue</Button>);
-  const button = view.getByTestId('button');
+it('uses the active surface during a native press', async () => {
+  const view = await render(<Button testID="button" testOnly_pressed>Continue</Button>);
 
-  fireEvent(button, 'pressIn');
   expect(StyleSheet.flatten(view.getByTestId('button').props.style)).toEqual(expect.objectContaining({
     backgroundColor: colors.action.secondary,
     opacity: 0.72,
     transform: [{ scale: 0.98 }],
   }));
 
-  fireEvent(button, 'pressOut');
+  await view.rerender(<Button testID="button">Continue</Button>);
   expect(StyleSheet.flatten(view.getByTestId('button').props.style).backgroundColor).toBe(colors.action.primary);
   expect(StyleSheet.flatten(view.getByTestId('button').props.style).opacity).toBeUndefined();
 });
 
-it('never calls onPress or applies active styling while disabled', () => {
+it('never calls onPress or applies active styling while disabled', async () => {
   const onPress = jest.fn();
-  const view = render(<Button disabled onPress={onPress} testID="button">Continue</Button>);
+  const view = await render(<Button disabled onPress={onPress} testID="button">Continue</Button>);
   const button = view.getByTestId('button');
 
-  fireEvent.press(button);
-  fireEvent(button, 'hoverIn');
+  await fireEvent.press(button);
+  await fireEvent(button, 'hoverIn');
   expect(onPress).not.toHaveBeenCalled();
   expect(StyleSheet.flatten(view.getByTestId('button').props.style).backgroundColor).toBe(colors.action.primary);
 });
 
-it('composes permitted layout styles without allowing tokenized visual overrides', () => {
-  const view = render(<Button
+it('composes permitted layout styles without allowing tokenized visual overrides', async () => {
+  const view = await render(<Button
     testID="button"
     style={{
       width: '100%',

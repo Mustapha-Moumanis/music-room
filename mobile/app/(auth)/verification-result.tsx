@@ -1,1 +1,1 @@
-export { VerificationResultScreen as default } from '../../src/features/auth/auth-screens';
+export { VerificationResultScreen as default } from '../../src/features/auth/auth-recovery-screens';

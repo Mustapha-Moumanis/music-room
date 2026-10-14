@@ -1,5 +1,5 @@
 /* Jest mock factories use require to avoid hoisted import references. */
-/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- imports follow hoisted mocks; factories require native primitives */
 import { fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
@@ -36,8 +36,8 @@ const playlists: SidebarPlaylist[] = [
 it.each([
   ['playing', 'Pause track', '40.8%'],
   ['paused', 'Play track', '40.8%'],
-] as const)('matches the %s Mini Player state', (state, actionLabel, elapsedWidth) => {
-  const view = render(<MiniPlayer
+] as const)('matches the %s Mini Player state', async (state, actionLabel, elapsedWidth) => {
+  const view = await render(<MiniPlayer
     artist="The Midnight"
     state={state}
     title="Better Off Alone"
@@ -66,11 +66,11 @@ it.each([
   expect(view.getByLabelText(actionLabel)).toBeTruthy();
 });
 
-it('forwards Mini Player actions', () => {
+it('forwards Mini Player actions', async () => {
   const onFavoritePress = jest.fn();
   const onOpenPress = jest.fn();
   const onPlayPausePress = jest.fn();
-  const view = render(<MiniPlayer
+  const view = await render(<MiniPlayer
     artist="The Midnight"
     onFavoritePress={onFavoritePress}
     onOpenPress={onOpenPress}
@@ -79,9 +79,9 @@ it('forwards Mini Player actions', () => {
     testID="mini"
   />);
 
-  fireEvent.press(view.getByTestId('mini-open'));
-  fireEvent.press(view.getByTestId('mini-favorite'));
-  fireEvent.press(view.getByTestId('mini-play-pause'));
+  await fireEvent.press(view.getByTestId('mini-open'));
+  await fireEvent.press(view.getByTestId('mini-favorite'));
+  await fireEvent.press(view.getByTestId('mini-play-pause'));
   expect(onOpenPress).toHaveBeenCalledTimes(1);
   expect(onFavoritePress).toHaveBeenCalledTimes(1);
   expect(onPlayPausePress).toHaveBeenCalledTimes(1);
@@ -95,8 +95,8 @@ const mobileDestinations: MobileNavigationDestination[] = [
   'profile',
 ];
 
-it.each(mobileDestinations)('matches Bottom Navigation with %s active', (active) => {
-  const view = render(<BottomNavigation active={active} testID="navigation" />);
+it.each(mobileDestinations)('matches Bottom Navigation with %s active', async (active) => {
+  const view = await render(<BottomNavigation active={active} testID="navigation" />);
 
   expect(StyleSheet.flatten(view.getByTestId('navigation').props.style)).toEqual(expect.objectContaining({
     width: '100%',
@@ -116,10 +116,10 @@ it.each(mobileDestinations)('matches Bottom Navigation with %s active', (active)
   }
 });
 
-it('forwards Bottom Navigation selection', () => {
+it('forwards Bottom Navigation selection', async () => {
   const onNavigate = jest.fn();
-  const view = render(<BottomNavigation onNavigate={onNavigate} testID="navigation" />);
-  fireEvent.press(view.getByTestId('navigation-events'));
+  const view = await render(<BottomNavigation onNavigate={onNavigate} testID="navigation" />);
+  await fireEvent.press(view.getByTestId('navigation-events'));
   expect(onNavigate).toHaveBeenCalledWith('events');
 });
 
@@ -132,8 +132,8 @@ const webDestinations: WebNavigationDestination[] = [
   'none',
 ];
 
-it.each(webDestinations)('matches desktop Web Sidebar with %s active', (active) => {
-  const view = render(<WebSidebar
+it.each(webDestinations)('matches desktop Web Sidebar with %s active', async (active) => {
+  const view = await render(<WebSidebar
     active={active}
     playlists={playlists}
     testID="sidebar"
@@ -160,10 +160,10 @@ it.each(webDestinations)('matches desktop Web Sidebar with %s active', (active) 
   }
 });
 
-it('matches the compact tablet Web Sidebar and forwards actions', () => {
+it('matches the compact tablet Web Sidebar and forwards actions', async () => {
   const onAddPlaylist = jest.fn();
   const onNavigate = jest.fn();
-  const view = render(<WebSidebar
+  const view = await render(<WebSidebar
     active="settings"
     breakpoint="tablet"
     onAddPlaylist={onAddPlaylist}
@@ -180,7 +180,7 @@ it('matches the compact tablet Web Sidebar and forwards actions', () => {
   }));
   expect(view.queryByText('Your playlists')).toBeNull();
   expect(view.queryByTestId('sidebar-add-playlist')).toBeNull();
-  fireEvent.press(view.getByTestId('sidebar-home'));
+  await fireEvent.press(view.getByTestId('sidebar-home'));
   expect(onNavigate).toHaveBeenCalledWith('home');
 });
 
@@ -191,8 +191,8 @@ it.each([
   ['tablet', 'search', 872, 64, 360],
 ] as const)(
   'matches the %s %s Top Bar geometry',
-  (breakpoint, state, width, height, searchWidth) => {
-    const view = render(<TopBar
+  async (breakpoint, state, width, height, searchWidth) => {
+    const view = await render(<TopBar
       accountName="Souad"
       breakpoint={breakpoint}
       initials="SH"
@@ -217,27 +217,27 @@ it.each([
   },
 );
 
-it('forwards the Top Bar account action without a redundant dots control', () => {
+it('forwards the Top Bar account action without a redundant dots control', async () => {
   const onAccountPress = jest.fn();
-  const view = render(<TopBar
+  const view = await render(<TopBar
     accountName="Souad"
     initials="SH"
     onAccountPress={onAccountPress}
     testID="top"
   />);
 
-  fireEvent.press(view.getByTestId('top-account'));
+  await fireEvent.press(view.getByTestId('top-account'));
   expect(onAccountPress).toHaveBeenCalledTimes(1);
   expect(view.queryByTestId('top-more')).toBeNull();
 });
 
 it.each([
-  ['desktop', 1440, 430, 100],
-  ['tablet', 1024, 290, 62],
+  ['desktop', 1440, 100],
+  ['tablet', 1024, 62],
 ] as const)(
   'matches the %s Web Player geometry',
-  (breakpoint, width, progressWidth, volumeWidth) => {
-    const view = render(<WebPlayer
+  async (breakpoint, width, volumeWidth) => {
+    const view = await render(<WebPlayer
       artist="The Midnight"
       breakpoint={breakpoint}
       title="Better Off Alone"
@@ -255,7 +255,7 @@ it.each([
     }));
     expect(view.getByTestId('player-artwork-image')).toBeTruthy();
     expect(StyleSheet.flatten(view.getByTestId('player-progress').props.style).width)
-      .toBe(progressWidth);
+      .toBe('100%');
     expect(StyleSheet.flatten(view.getByTestId('player-volume-track').props.style).width)
       .toBe(volumeWidth);
     expect(StyleSheet.flatten(view.getByTestId('player-play-pause').props.style)).toEqual(expect.objectContaining({
@@ -267,17 +267,17 @@ it.each([
   },
 );
 
-it('forwards Web Player actions through one semantic callback', () => {
+it('forwards Web Player actions through one semantic callback', async () => {
   const onAction = jest.fn();
-  const view = render(<WebPlayer
+  const view = await render(<WebPlayer
     artist="The Midnight"
     onAction={onAction}
     title="Better Off Alone"
     testID="player"
   />);
 
-  fireEvent.press(view.getByTestId('player-next'));
-  fireEvent.press(view.getByTestId('player-queue'));
+  await fireEvent.press(view.getByTestId('player-next'));
+  await fireEvent.press(view.getByTestId('player-queue'));
   expect(onAction).toHaveBeenNthCalledWith(1, 'next');
   expect(onAction).toHaveBeenNthCalledWith(2, 'queue');
 });

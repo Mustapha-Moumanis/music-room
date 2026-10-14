@@ -1,1 +1,1 @@
-export { SuggestTrackScreen as default } from '../../../src/features/track-vote/track-vote-screens';
+export { SuggestTrackScreen as default } from '../../../src/features/track-vote/event-people-screens';

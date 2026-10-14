@@ -1,5 +1,5 @@
 /* Jest mock factories use require to avoid hoisted import references. */
-/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- imports follow hoisted mocks; factories require native primitives */
 import { render, screen } from '@testing-library/react-native';
 
 const mockIsDevBuild = jest.fn();
@@ -17,9 +17,9 @@ jest.mock('@hugeicons/react-native', () => {
 
 import FoundationsScreen from '../../app/dev/foundations';
 
-it('renders the static native foundations specimen in development builds', () => {
+it('renders the static native foundations specimen in development builds', async () => {
   mockIsDevBuild.mockReturnValue(true);
-  render(<FoundationsScreen />);
+  await render(<FoundationsScreen />);
   expect(screen.getByTestId('foundations-screen')).toBeTruthy();
   expect(screen.getByText('Foundations')).toBeTruthy();
   expect(screen.getByText('01. Visual direction')).toBeTruthy();
@@ -27,9 +27,9 @@ it('renders the static native foundations specimen in development builds', () =>
   expect(screen.getByText('Implementation rule')).toBeTruthy();
 });
 
-it('redirects to the normal entry route outside development builds', () => {
+it('redirects to the normal entry route outside development builds', async () => {
   mockIsDevBuild.mockReturnValue(false);
-  render(<FoundationsScreen />);
+  await render(<FoundationsScreen />);
   expect(screen.getByText('Redirect:/')).toBeTruthy();
   expect(screen.queryByTestId('foundations-screen')).toBeNull();
 });

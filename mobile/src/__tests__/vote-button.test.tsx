@@ -48,10 +48,10 @@ const states: Record<VoteButtonState, {
   },
 };
 
-it.each(Object.entries(states) as Array<[VoteButtonState, (typeof states)[VoteButtonState]]>) (
+it.each(Object.entries(states) as [VoteButtonState, (typeof states)[VoteButtonState]][]) (
   'matches the Figma %s Vote Button state',
-  (state, expected) => {
-    const view = render(<VoteButton state={state} testID="vote" />);
+  async (state, expected) => {
+    const view = await render(<VoteButton state={state} testID="vote" />);
     const buttonStyle = StyleSheet.flatten(view.getByTestId('vote').props.style);
     const labelStyle = StyleSheet.flatten(view.getByText(expected.label).props.style);
 
@@ -80,24 +80,26 @@ it.each(Object.entries(states) as Array<[VoteButtonState, (typeof states)[VoteBu
   },
 );
 
-it('allows available and voted actions while blocking unavailable states', () => {
+it('allows available and voted actions while blocking unavailable states', async () => {
   const onPress = jest.fn();
-  const available = render(<VoteButton onPress={onPress} testID="available" />);
-  const voted = render(<VoteButton onPress={onPress} state="voted" testID="voted" />);
-  const disabled = render(<VoteButton onPress={onPress} state="disabled" testID="disabled" />);
-  const restricted = render(<VoteButton onPress={onPress} state="restricted" testID="restricted" />);
+  const view = await render(<>
+    <VoteButton onPress={onPress} testID="available" />
+    <VoteButton onPress={onPress} state="voted" testID="voted" />
+    <VoteButton onPress={onPress} state="disabled" testID="disabled" />
+    <VoteButton onPress={onPress} state="restricted" testID="restricted" />
+  </>);
 
-  fireEvent.press(available.getByTestId('available'));
-  fireEvent.press(voted.getByTestId('voted'));
-  fireEvent.press(disabled.getByTestId('disabled'));
-  fireEvent.press(restricted.getByTestId('restricted'));
+  await fireEvent.press(view.getByTestId('available'));
+  await fireEvent.press(view.getByTestId('voted'));
+  await fireEvent.press(view.getByTestId('disabled'));
+  await fireEvent.press(view.getByTestId('restricted'));
 
   expect(onPress).toHaveBeenCalledTimes(2);
 });
 
-it('provides state-specific accessible labels and permits caller overrides', () => {
-  const voted = render(<VoteButton state="voted" testID="vote" />);
-  const custom = render(<VoteButton accessibilityLabel="Vote for Midnight Drive" testID="custom" />);
+it('provides state-specific accessible labels and permits caller overrides', async () => {
+  const voted = await render(<VoteButton state="voted" testID="vote" />);
+  const custom = await render(<VoteButton accessibilityLabel="Vote for Midnight Drive" testID="custom" />);
 
   expect(voted.getByTestId('vote').props).toEqual(expect.objectContaining({
     accessibilityRole: 'button',
@@ -106,8 +108,8 @@ it('provides state-specific accessible labels and permits caller overrides', () 
   expect(custom.getByTestId('custom').props.accessibilityLabel).toBe('Vote for Midnight Drive');
 });
 
-it('keeps Figma geometry internal while accepting layout constraints', () => {
-  const view = render(<VoteButton
+it('keeps Figma geometry internal while accepting layout constraints', async () => {
+  const view = await render(<VoteButton
     testID="vote"
     style={{
       maxWidth: 200,

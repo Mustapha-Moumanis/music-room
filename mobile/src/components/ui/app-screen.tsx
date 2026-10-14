@@ -35,6 +35,7 @@ export function AppScreen({
   return <SafeAreaView style={[styles.safeArea, style]} testID={testID}>
     {scrollable
       ? <ScrollSurface
+          testID={testID ? `${testID}-scroll` : undefined}
           style={styles.scroll}
           contentContainerStyle={contentStyle}
           continuationTestID={testID ? `${testID}-scroll-cue` : undefined}

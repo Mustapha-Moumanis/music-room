@@ -7,8 +7,8 @@ import { colors, layout, radius, spacing, typography } from '../theme';
 it.each([
   ['default', 'Nothing here yet', 'Explore'],
   ['noResults', 'No matches yet', 'Clear search'],
-] as const)('matches the %s Empty State variant', (type, title, actionLabel) => {
-  const view = render(<EmptyState
+] as const)('matches the %s Empty State variant', async (type, title, actionLabel) => {
+  const view = await render(<EmptyState
     actionLabel={actionLabel}
     description="Description"
     title={title}
@@ -23,13 +23,13 @@ it.each([
     gap: spacing[12],
     padding: spacing[24],
   }));
-  expect(StyleSheet.flatten(view.getByTestId('empty-state-illustration').props.style)).toEqual(expect.objectContaining({
+  expect(StyleSheet.flatten(view.getByTestId('empty-state-illustration', { includeHiddenElements: true }).props.style)).toEqual(expect.objectContaining({
     width: spacing[64],
     height: spacing[64],
     borderRadius: radius.full,
     backgroundColor: colors.background.surface,
   }));
-  expect(StyleSheet.flatten(view.getByText('♪').props.style)).toEqual(expect.objectContaining({
+  expect(StyleSheet.flatten(view.getByText('♪', { includeHiddenElements: true }).props.style)).toEqual(expect.objectContaining({
     ...typography.h4,
     color: colors.action.secondary,
   }));
@@ -42,9 +42,9 @@ it.each([
   }));
 });
 
-it('forwards Error State retry actions and exposes the action as a button', () => {
+it('forwards Error State retry actions and exposes the action as a button', async () => {
   const onAction = jest.fn();
-  const view = render(<ErrorState
+  const view = await render(<ErrorState
     actionLabel="Retry"
     description="Try again or check your connection."
     onAction={onAction}
@@ -52,20 +52,20 @@ it('forwards Error State retry actions and exposes the action as a button', () =
     testID="error-state"
   />);
 
-  expect(StyleSheet.flatten(view.getByTestId('error-state-illustration').props.style).backgroundColor)
+  expect(StyleSheet.flatten(view.getByTestId('error-state-illustration', { includeHiddenElements: true }).props.style).backgroundColor)
     .toBe(colors.category.secondary);
   expect(StyleSheet.flatten(view.getByTestId('error-state-action-pill').props.style).backgroundColor)
     .toBe(colors.action.primary);
   expect(view.getByTestId('error-state-action').props.accessibilityRole).toBe('button');
-  fireEvent.press(view.getByTestId('error-state-action'));
+  await fireEvent.press(view.getByTestId('error-state-action'));
   expect(onAction).toHaveBeenCalledTimes(1);
 });
 
 it.each([
   ['card', { width: 280, height: 300 }, { width: 256, height: 190 }],
   ['row', { width: '100%', maxWidth: 620, height: 72 }, { width: spacing[48], height: spacing[48] }],
-] as const)('matches the %s Skeleton Loader variant', (type, container, media) => {
-  const view = render(<SkeletonLoader type={type} testID="skeleton" />);
+] as const)('matches the %s Skeleton Loader variant', async (type, container, media) => {
+  const view = await render(<SkeletonLoader type={type} testID="skeleton" />);
 
   expect(StyleSheet.flatten(view.getByTestId('skeleton').props.style)).toEqual(expect.objectContaining({
     ...container,
@@ -74,7 +74,7 @@ it.each([
     borderRadius: radius.card,
     backgroundColor: colors.background.surface,
   }));
-  expect(StyleSheet.flatten(view.getByTestId('skeleton-media').props.style)).toEqual(expect.objectContaining({
+  expect(StyleSheet.flatten(view.getByTestId('skeleton-media', { includeHiddenElements: true }).props.style)).toEqual(expect.objectContaining({
     ...media,
     borderRadius: radius.small,
     backgroundColor: colors.border.subtle,

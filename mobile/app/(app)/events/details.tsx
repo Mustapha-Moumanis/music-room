@@ -1,1 +1,1 @@
-export { EventDetailsScreen as default } from '../../../src/features/track-vote/track-vote-screens';
+export { EventDetailsScreen as default } from '../../../src/features/track-vote/event-discovery-screens';

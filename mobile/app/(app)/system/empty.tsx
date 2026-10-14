@@ -1,1 +1,1 @@
-export { EmptyStatesScreen as default } from '../../../src/features/system/system-screens';
+export { EmptyStatesScreen as default } from '../../../src/features/system/system-feedback-screens';

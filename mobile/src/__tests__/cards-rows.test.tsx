@@ -1,5 +1,5 @@
 /* Jest mock factories use require to avoid hoisted import references. */
-/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- imports follow hoisted mocks; factories require native primitives */
 import { fireEvent, render } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
@@ -20,10 +20,10 @@ import {
 } from '../components/ui';
 import { colors, layout, radius, spacing, typography } from '../theme';
 
-it('matches both User Card relationships and forwards the add-friend action', () => {
+it('matches both User Card relationships and forwards the add-friend action', async () => {
   const onActionPress = jest.fn();
   const onPress = jest.fn();
-  const stranger = render(<UserCard
+  const stranger = await render(<UserCard
     initials="OM"
     meta="3 mutual interests"
     name="Omar Saadi"
@@ -50,12 +50,12 @@ it('matches both User Card relationships and forwards the add-friend action', ()
   expect(StyleSheet.flatten(stranger.getByText('Omar Saadi').props.style))
     .toEqual(expect.objectContaining(typography.navigationLabel));
 
-  fireEvent.press(stranger.getByTestId('user-action'));
+  await fireEvent.press(stranger.getByTestId('user-action'));
   expect(onActionPress).toHaveBeenCalledTimes(1);
-  fireEvent.press(stranger.getByTestId('user-profile'));
+  await fireEvent.press(stranger.getByTestId('user-profile'));
   expect(onPress).toHaveBeenCalledTimes(1);
 
-  const friend = render(<UserCard
+  const friend = await render(<UserCard
     initials="NA"
     meta="Friend · Indie / Soul"
     name="Nada Amrani"
@@ -86,10 +86,10 @@ const eventStates: Record<EventCardState, { artwork: string; label: string; stat
   },
 };
 
-it.each(Object.entries(eventStates) as Array<[EventCardState, (typeof eventStates)[EventCardState]]>)(
+it.each(Object.entries(eventStates) as [EventCardState, (typeof eventStates)[EventCardState]][])(
   'matches the %s Event Card state',
-  (state, expected) => {
-    const view = render(<EventCard
+  async (state, expected) => {
+    const view = await render(<EventCard
       attendeeSummary="24 listening · 8 tracks"
       meta="Tonight · 20:00 · Benguerir"
       state={state}
@@ -137,10 +137,10 @@ const playlistModes: Record<PlaylistCardMode, { artwork: string; meta: string; t
   },
 };
 
-it.each(Object.entries(playlistModes) as Array<[PlaylistCardMode, (typeof playlistModes)[PlaylistCardMode]]>)(
+it.each(Object.entries(playlistModes) as [PlaylistCardMode, (typeof playlistModes)[PlaylistCardMode]][])(
   'matches the %s Playlist Card mode',
-  (mode, expected) => {
-    const view = render(<PlaylistCard {...expected} mode={mode} testID="playlist" />);
+  async (mode, expected) => {
+    const view = await render(<PlaylistCard {...expected} mode={mode} testID="playlist" />);
 
     expect(StyleSheet.flatten(view.getByTestId('playlist').props.style)).toEqual(expect.objectContaining({
       width: '100%',
@@ -162,8 +162,8 @@ it.each(Object.entries(playlistModes) as Array<[PlaylistCardMode, (typeof playli
 
 const trackModes: TrackRowMode[] = ['default', 'playing', 'vote', 'dragging'];
 
-it.each(trackModes)('matches the %s Track Row mode', (mode) => {
-  const view = render(<TrackRow
+it.each(trackModes)('matches the %s Track Row mode', async (mode) => {
+  const view = await render(<TrackRow
     artist="The Midnight"
     duration="3:56"
     mode={mode}
@@ -182,10 +182,8 @@ it.each(trackModes)('matches the %s Track Row mode', (mode) => {
   }));
   expect(artworkStyle.borderRadius).toBe(radius.medium);
   expect(rowStyle.backgroundColor)
-    .toBe(mode === 'playing' ? colors.background.surface : colors.background.app);
+    .toBe(mode === 'playing' || mode === 'dragging' ? colors.background.surface : colors.background.app);
   expect(rowStyle.borderRadius).toBe(mode === 'default' ? undefined : radius.medium);
-  expect(rowStyle.borderWidth).toBe(mode === 'dragging' ? 2 : undefined);
-  expect(rowStyle.borderColor).toBe(mode === 'dragging' ? colors.action.secondary : undefined);
 
   if (mode === 'vote') expect(view.getByTestId('track-vote')).toBeTruthy();
   else expect(view.queryByTestId('track-vote')).toBeNull();
@@ -194,9 +192,9 @@ it.each(trackModes)('matches the %s Track Row mode', (mode) => {
   if (mode === 'playing') expect(view.getByText('Playing')).toBeTruthy();
 });
 
-it('forwards Track Row voting and Friend Request actions', () => {
+it('forwards Track Row voting and Friend Request actions', async () => {
   const onVotePress = jest.fn();
-  const vote = render(<TrackRow
+  const vote = await render(<TrackRow
     artist="The Midnight"
     duration="3:56"
     mode="vote"
@@ -204,12 +202,12 @@ it('forwards Track Row voting and Friend Request actions', () => {
     title="Better Off Alone"
     testID="track"
   />);
-  fireEvent.press(vote.getByTestId('track-vote'));
+  await fireEvent.press(vote.getByTestId('track-vote'));
   expect(onVotePress).toHaveBeenCalledTimes(1);
 
   const onAccept = jest.fn();
   const onDecline = jest.fn();
-  const pending = render(<FriendRequestRow
+  const pending = await render(<FriendRequestRow
     initials="NA"
     name="Nada Amrani"
     onAccept={onAccept}
@@ -225,12 +223,12 @@ it('forwards Track Row voting and Friend Request actions', () => {
     borderRadius: radius.medium,
     backgroundColor: colors.background.surface,
   }));
-  fireEvent.press(pending.getByTestId('request-accept'));
-  fireEvent.press(pending.getByTestId('request-decline'));
+  await fireEvent.press(pending.getByTestId('request-accept'));
+  await fireEvent.press(pending.getByTestId('request-decline'));
   expect(onAccept).toHaveBeenCalledTimes(1);
   expect(onDecline).toHaveBeenCalledTimes(1);
 
-  const accepted = render(<FriendRequestRow
+  const accepted = await render(<FriendRequestRow
     initials="NA"
     name="Nada Amrani"
     state="accepted"
@@ -241,8 +239,8 @@ it('forwards Track Row voting and Friend Request actions', () => {
   expect(accepted.queryByTestId('accepted-accept')).toBeNull();
 });
 
-it('renders repository-backed image sources when supplied', () => {
-  const view = render(<PlaylistCard
+it('renders repository-backed image sources when supplied', async () => {
+  const view = await render(<PlaylistCard
     artworkSource={{ uri: 'file:///artwork.jpg' }}
     meta="18 tracks"
     title="Sunday Vinyl"

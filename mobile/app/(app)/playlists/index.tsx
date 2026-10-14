@@ -1,1 +1,1 @@
-export { DiscoverPlaylistsScreen as default } from '../../../src/features/playlists/playlist-screens';
+export { DiscoverPlaylistsScreen as default } from '../../../src/features/playlists/playlist-library-screens';

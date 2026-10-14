@@ -1,1 +1,1 @@
-export { BackendUrlScreen as default } from '../../src/features/auth/auth-screens';
+export { BackendUrlScreen as default } from '../../src/features/auth/auth-backend-screens';

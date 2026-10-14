@@ -16,14 +16,15 @@ const avatarDimensions: Record<AvatarSize, number> = {
   small: spacing[32],
   medium: layout.minimumTouchTarget,
   topBar: 36,
+  header: 40,
   card: spacing[48],
   large: spacing[64],
 };
 
-it.each(Object.entries(avatarDimensions) as Array<[AvatarSize, number]>) (
+it.each(Object.entries(avatarDimensions) as [AvatarSize, number][]) (
   'matches the %s Avatar fallback from Figma',
-  (size, dimension) => {
-    const view = render(<Avatar initials="SH" size={size} testID="avatar" />);
+  async (size, dimension) => {
+    const view = await render(<Avatar initials="SH" size={size} testID="avatar" />);
     const avatarStyle = StyleSheet.flatten(view.getByTestId('avatar').props.style);
     const initialsStyle = StyleSheet.flatten(view.getByTestId('avatar-initials').props.style);
 
@@ -45,8 +46,8 @@ it.each(Object.entries(avatarDimensions) as Array<[AvatarSize, number]>) (
   },
 );
 
-it('uses a supplied photo instead of fallback initials', () => {
-  const view = render(<Avatar
+it('uses a supplied photo instead of fallback initials', async () => {
+  const view = await render(<Avatar
     accessibilityLabel="Souad profile photo"
     initials="SH"
     source={{ uri: 'https://example.com/avatar.jpg' }}
@@ -64,10 +65,10 @@ const visibilityVariants: Record<VisibilityType, { background: string; label: st
   private: { background: colors.background.surface, label: 'Private', color: colors.text.primary },
 };
 
-it.each(Object.entries(visibilityVariants) as Array<[VisibilityType, (typeof visibilityVariants)[VisibilityType]]>) (
+it.each(Object.entries(visibilityVariants) as [VisibilityType, (typeof visibilityVariants)[VisibilityType]][]) (
   'matches the %s Visibility Badge',
-  (type, expected) => {
-    const view = render(<VisibilityBadge type={type} testID="badge" />);
+  async (type, expected) => {
+    const view = await render(<VisibilityBadge type={type} testID="badge" />);
 
     expect(StyleSheet.flatten(view.getByTestId('badge').props.style)).toEqual(expect.objectContaining({
       height: spacing[32],
@@ -91,10 +92,10 @@ const licenseVariants: Record<LicenseType, { background: string; label: string; 
   restricted: { background: colors.background.surface, label: 'Restricted', color: colors.text.primary },
 };
 
-it.each(Object.entries(licenseVariants) as Array<[LicenseType, (typeof licenseVariants)[LicenseType]]>) (
+it.each(Object.entries(licenseVariants) as [LicenseType, (typeof licenseVariants)[LicenseType]][]) (
   'matches the %s License Badge',
-  (type, expected) => {
-    const view = render(<LicenseBadge type={type} testID="badge" />);
+  async (type, expected) => {
+    const view = await render(<LicenseBadge type={type} testID="badge" />);
 
     expect(StyleSheet.flatten(view.getByTestId('badge').props.style).backgroundColor).toBe(expected.background);
     expect(StyleSheet.flatten(view.getByText(expected.label).props.style).color).toBe(expected.color);
@@ -102,10 +103,10 @@ it.each(Object.entries(licenseVariants) as Array<[LicenseType, (typeof licenseVa
   },
 );
 
-it('matches default, selected, and disabled Music Preference Chip states', () => {
-  const initial = render(<MusicPreferenceChip testID="initial">Indie</MusicPreferenceChip>);
-  const selected = render(<MusicPreferenceChip selected testID="selected">Indie</MusicPreferenceChip>);
-  const disabled = render(<MusicPreferenceChip disabled testID="disabled">Indie</MusicPreferenceChip>);
+it('matches default, selected, and disabled Music Preference Chip states', async () => {
+  const initial = await render(<MusicPreferenceChip testID="initial">Indie</MusicPreferenceChip>);
+  const selected = await render(<MusicPreferenceChip selected testID="selected">Indie</MusicPreferenceChip>);
+  const disabled = await render(<MusicPreferenceChip disabled testID="disabled">Indie</MusicPreferenceChip>);
 
   expect(StyleSheet.flatten(initial.getByTestId('initial').props.style)).toEqual(expect.objectContaining({
     height: spacing[32],
@@ -129,21 +130,21 @@ it('matches default, selected, and disabled Music Preference Chip states', () =>
   expect(disabled.getByTestId('disabled').props.accessibilityState).toEqual({ checked: false, disabled: true });
 });
 
-it('forwards chip presses and blocks them while disabled', () => {
+it('forwards chip presses and blocks them while disabled', async () => {
   const onPress = jest.fn();
-  const active = render(<MusicPreferenceChip onPress={onPress} testID="active">Indie</MusicPreferenceChip>);
-  const disabled = render(<MusicPreferenceChip disabled onPress={onPress} testID="disabled">Indie</MusicPreferenceChip>);
+  const view = await render(<>
+    <MusicPreferenceChip onPress={onPress} testID="active" testOnly_pressed>Indie</MusicPreferenceChip>
+    <MusicPreferenceChip disabled onPress={onPress} testID="disabled">Indie</MusicPreferenceChip>
+  </>);
 
-  fireEvent(active.getByTestId('active'), 'pressIn');
-  expect(StyleSheet.flatten(active.getByTestId('active').props.style)).toEqual(expect.objectContaining({
+  expect(StyleSheet.flatten(view.getByTestId('active').props.style)).toEqual(expect.objectContaining({
     opacity: 0.72,
     transform: [{ scale: 0.98 }],
   }));
-  fireEvent(active.getByTestId('active'), 'pressOut');
-  fireEvent.press(active.getByTestId('active'));
-  fireEvent.press(disabled.getByTestId('disabled'));
+  await fireEvent.press(view.getByTestId('active'));
+  await fireEvent.press(view.getByTestId('disabled'));
 
   expect(onPress).toHaveBeenCalledTimes(1);
-  expect(active.getByTestId('active').props.accessibilityRole).toBe('checkbox');
-  expect(active.getByTestId('active').props.hitSlop).toBe(spacing[8]);
+  expect(view.getByTestId('active').props.accessibilityRole).toBe('checkbox');
+  expect(view.getByTestId('active').props.hitSlop).toBe(spacing[8]);
 });

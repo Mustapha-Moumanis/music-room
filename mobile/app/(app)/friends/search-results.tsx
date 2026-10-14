@@ -1,1 +1,1 @@
-export { SearchResultsScreen as default } from '../../../src/features/profile-friends/profile-friends-screens';
+export { SearchResultsScreen as default } from '../../../src/features/profile-friends/friend-discovery-screens';

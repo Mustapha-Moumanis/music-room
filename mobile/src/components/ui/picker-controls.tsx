@@ -21,7 +21,7 @@ export type PickerLayoutStyle = Pick<
 
 type NativePickerProps = Omit<
   PressableProps,
-  'accessibilityRole' | 'children' | 'disabled' | 'style'
+  'accessibilityRole' | 'children' | 'disabled' | 'role' | 'style'
 >;
 
 type PickerControlProps = NativePickerProps & {

@@ -1,1 +1,1 @@
-export { ResetPasswordScreen as default } from '../../src/features/auth/auth-screens';
+export { ResetPasswordScreen as default } from '../../src/features/auth/auth-recovery-screens';

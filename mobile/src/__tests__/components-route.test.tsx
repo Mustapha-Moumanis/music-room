@@ -1,5 +1,5 @@
 /* Jest mock factories use require to avoid hoisted import references. */
-/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable import/first, @typescript-eslint/no-require-imports -- imports follow hoisted mocks; factories require native primitives */
 import { render, screen } from '@testing-library/react-native';
 
 const mockIsDevBuild = jest.fn();
@@ -12,9 +12,9 @@ jest.mock('expo-router', () => {
 
 import ComponentsScreen from '../../app/dev/components';
 
-it('renders every Button specimen and the live example in development builds', () => {
+it('renders every Button specimen and the live example in development builds', async () => {
   mockIsDevBuild.mockReturnValue(true);
-  render(<ComponentsScreen />);
+  await render(<ComponentsScreen />);
 
   expect(screen.getByTestId('components-screen')).toBeTruthy();
   expect(screen.getByText('Components')).toBeTruthy();
@@ -86,9 +86,9 @@ it('renders every Button specimen and the live example in development builds', (
   }
 });
 
-it('redirects to the normal entry route outside development builds', () => {
+it('redirects to the normal entry route outside development builds', async () => {
   mockIsDevBuild.mockReturnValue(false);
-  render(<ComponentsScreen />);
+  await render(<ComponentsScreen />);
   expect(screen.getByText('Redirect:/')).toBeTruthy();
   expect(screen.queryByTestId('components-screen')).toBeNull();
 });

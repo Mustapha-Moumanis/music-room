@@ -1,1 +1,1 @@
-export { CreateEventScheduleScreen as default } from '../../../../src/features/track-vote/track-vote-screens';
+export { CreateEventScheduleScreen as default } from '../../../../src/features/track-vote/create-event-screens';

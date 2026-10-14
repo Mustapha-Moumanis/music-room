@@ -14,8 +14,8 @@ import { colors, layout, radius, spacing, typography } from '../theme';
 it.each([
   ['confirm', 250, false],
   ['form', 360, true],
-] as const)('matches the %s Modal variant', (type, height, hasInput) => {
-  const view = render(<Modal
+] as const)('matches the %s Modal variant', async (type, height, hasInput) => {
+  const view = await render(<Modal
     confirmLabel={type === 'form' ? 'Send invite' : 'Remove'}
     description={type === 'form'
       ? 'Search friends and invite them to this playlist.'
@@ -50,10 +50,10 @@ it.each([
     .toBe(colors.action.primary);
 });
 
-it('forwards Modal actions and preserves 44px action targets', () => {
+it('forwards Modal actions and preserves 44px action targets', async () => {
   const onCancel = jest.fn();
   const onConfirm = jest.fn();
-  const view = render(<Modal
+  const view = await render(<Modal
     confirmLabel="Remove"
     description="This change will update for every collaborator in real time."
     onCancel={onCancel}
@@ -66,8 +66,8 @@ it('forwards Modal actions and preserves 44px action targets', () => {
     .toBe(layout.minimumTouchTarget);
   expect(StyleSheet.flatten(view.getByTestId('modal-confirm').props.style).height)
     .toBe(layout.minimumTouchTarget);
-  fireEvent.press(view.getByTestId('modal-cancel'));
-  fireEvent.press(view.getByTestId('modal-confirm'));
+  await fireEvent.press(view.getByTestId('modal-cancel'));
+  await fireEvent.press(view.getByTestId('modal-confirm'));
   expect(onCancel).toHaveBeenCalledTimes(1);
   expect(onConfirm).toHaveBeenCalledTimes(1);
 });
@@ -82,8 +82,8 @@ const actions: BottomSheetOption[] = [
 it.each([
   ['actions', 280, actions],
   ['picker', 360, actions.slice(0, 3)],
-] as const)('matches the %s Bottom Sheet variant', (type, height, options) => {
-  const view = render(<BottomSheet
+] as const)('matches the %s Bottom Sheet variant', async (type, height, options) => {
+  const view = await render(<BottomSheet
     options={[...options]}
     title={type === 'picker' ? 'Choose visibility' : 'Track actions'}
     type={type}
@@ -102,7 +102,7 @@ it.each([
     borderTopRightRadius: radius.media,
     backgroundColor: colors.background.surface,
   }));
-  expect(StyleSheet.flatten(view.getByTestId('sheet-handle').props.style)).toEqual(expect.objectContaining({
+  expect(StyleSheet.flatten(view.getByTestId('sheet-handle', { includeHiddenElements: true }).props.style)).toEqual(expect.objectContaining({
     width: layout.minimumTouchTarget,
     height: spacing[4],
     borderRadius: radius.full,
@@ -111,16 +111,16 @@ it.each([
   expect(view.getAllByRole('button')).toHaveLength(options.length);
 });
 
-it('forwards the selected Bottom Sheet option', () => {
+it('forwards the selected Bottom Sheet option', async () => {
   const onOptionPress = jest.fn();
-  const view = render(<BottomSheet
+  const view = await render(<BottomSheet
     onOptionPress={onOptionPress}
     options={actions}
     title="Track actions"
     testID="sheet"
   />);
 
-  fireEvent.press(view.getByTestId('sheet-option-share'));
+  await fireEvent.press(view.getByTestId('sheet-option-share'));
   expect(onOptionPress).toHaveBeenCalledWith(actions[2]);
 });
 
@@ -150,10 +150,10 @@ const toastStates: Record<ToastTone, {
   },
 };
 
-it.each(Object.entries(toastStates) as Array<[ToastTone, (typeof toastStates)[ToastTone]]>)(
+it.each(Object.entries(toastStates) as [ToastTone, (typeof toastStates)[ToastTone]][])(
   'matches the %s Toast tone',
-  (tone, expected) => {
-    const view = render(<Toast message={expected.message} tone={tone} testID="toast" />);
+  async (tone, expected) => {
+    const view = await render(<Toast message={expected.message} tone={tone} testID="toast" />);
 
     expect(StyleSheet.flatten(view.getByTestId('toast').props.style)).toEqual(expect.objectContaining({
       width: '100%',

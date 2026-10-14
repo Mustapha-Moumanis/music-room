@@ -2,9 +2,9 @@ import type { EmptyStateProps, ErrorStateProps, SkeletonLoaderType } from '../co
 import examples from '../content/dev-examples.json';
 import systemContent from '../content/system.json';
 
-export const emptyStateExamples = systemContent.emptyStates as Array<
+export const emptyStateExamples = systemContent.emptyStates as (
   EmptyStateProps & { type: NonNullable<EmptyStateProps['type']> }
->;
+)[];
 
 export const errorStateExample = systemContent.errorState as ErrorStateProps;
 

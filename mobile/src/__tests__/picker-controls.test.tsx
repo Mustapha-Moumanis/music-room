@@ -4,8 +4,8 @@ import { StyleSheet } from 'react-native';
 import { DateTimePicker, LocationPicker, Select } from '../components/ui';
 import { colors, radius, spacing, typography } from '../theme';
 
-it('matches the default Select geometry and placeholder tokens from Figma', () => {
-  const view = render(<Select label="Visibility" testID="visibility" />);
+it('matches the default Select geometry and placeholder tokens from Figma', async () => {
+  const view = await render(<Select label="Visibility" testID="visibility" />);
   const controlStyle = StyleSheet.flatten(view.getByTestId('visibility').props.style);
   const labelStyle = StyleSheet.flatten(view.getByTestId('visibility-label').props.style);
   const valueStyle = StyleSheet.flatten(view.getByTestId('visibility-value').props.style);
@@ -32,7 +32,7 @@ it('matches the default Select geometry and placeholder tokens from Figma', () =
     color: colors.text.muted,
   }));
   expect(view.getByText('Choose visibility')).toBeTruthy();
-  expect(view.getByTestId('visibility-icon')).toBeTruthy();
+  expect(view.getByTestId('visibility-icon', { includeHiddenElements: true })).toBeTruthy();
   expect(view.getByTestId('visibility').props.accessibilityRole).toBe('combobox');
   expect(view.getByTestId('visibility').props.accessibilityState).toEqual({
     expanded: false,
@@ -40,8 +40,8 @@ it('matches the default Select geometry and placeholder tokens from Figma', () =
   });
 });
 
-it('uses the teal focus treatment while Select is expanded', () => {
-  const view = render(<Select expanded label="Visibility" testID="visibility" />);
+it('uses the teal focus treatment while Select is expanded', async () => {
+  const view = await render(<Select expanded label="Visibility" testID="visibility" />);
 
   expect(StyleSheet.flatten(view.getByTestId('visibility').props.style)).toEqual(expect.objectContaining({
     borderWidth: 2,
@@ -51,30 +51,30 @@ it('uses the teal focus treatment while Select is expanded', () => {
   expect(view.getByTestId('visibility').props.accessibilityState.expanded).toBe(true);
 });
 
-it('renders a selected value and prevents presses while disabled', () => {
+it('renders a selected value and prevents presses while disabled', async () => {
   const onPress = jest.fn();
-  const selected = render(<Select label="Visibility" value="Friends only" testID="selected" />);
-  const disabled = render(<Select disabled label="Visibility" onPress={onPress} testID="disabled" />);
+  const selected = await render(<Select label="Visibility" value="Friends only" testID="selected" />);
+  const disabled = await render(<Select disabled label="Visibility" onPress={onPress} testID="disabled" />);
 
   expect(StyleSheet.flatten(selected.getByTestId('selected-value').props.style).color).toBe(colors.text.primary);
-  fireEvent.press(disabled.getByTestId('disabled'));
+  await fireEvent.press(disabled.getByTestId('disabled'));
   expect(onPress).not.toHaveBeenCalled();
   expect(disabled.getByTestId('disabled').props.accessibilityState.disabled).toBe(true);
 });
 
-it('forwards picker presses to the owning screen', () => {
+it('forwards picker presses to the owning screen', async () => {
   const onPress = jest.fn();
-  const view = render(<DateTimePicker onPress={onPress} testID="date" />);
+  const view = await render(<DateTimePicker onPress={onPress} testID="date" />);
 
-  fireEvent.press(view.getByTestId('date'));
+  await fireEvent.press(view.getByTestId('date'));
   expect(onPress).toHaveBeenCalledTimes(1);
   expect(view.getByTestId('date').props.accessibilityRole).toBe('button');
 });
 
-it('matches Date and Time default, filled, and error variants', () => {
-  const initial = render(<DateTimePicker testID="initial" />);
-  const filled = render(<DateTimePicker value="Oct 18 · 20:00" testID="filled" />);
-  const invalid = render(<DateTimePicker error testID="invalid" />);
+it('matches Date and Time default, filled, and error variants', async () => {
+  const initial = await render(<DateTimePicker testID="initial" />);
+  const filled = await render(<DateTimePicker value="Oct 18 · 20:00" testID="filled" />);
+  const invalid = await render(<DateTimePicker error testID="invalid" />);
 
   expect(StyleSheet.flatten(initial.getByTestId('initial-value').props.style).color).toBe(colors.text.muted);
   expect(StyleSheet.flatten(filled.getByTestId('filled-value').props.style).color).toBe(colors.text.primary);
@@ -87,10 +87,10 @@ it('matches Date and Time default, filled, and error variants', () => {
   expect(invalid.getByTestId('invalid').props['aria-invalid']).toBe(true);
 });
 
-it('matches Location default, selected, and permission-denied variants', () => {
-  const initial = render(<LocationPicker testID="initial" />);
-  const selected = render(<LocationPicker value="Benguerir, Morocco" testID="selected" />);
-  const denied = render(<LocationPicker permissionDenied testID="denied" />);
+it('matches Location default, selected, and permission-denied variants', async () => {
+  const initial = await render(<LocationPicker testID="initial" />);
+  const selected = await render(<LocationPicker value="Benguerir, Morocco" testID="selected" />);
+  const denied = await render(<LocationPicker permissionDenied testID="denied" />);
 
   expect(StyleSheet.flatten(initial.getByTestId('initial-value').props.style).color).toBe(colors.text.muted);
   expect(StyleSheet.flatten(selected.getByTestId('selected-value').props.style).color).toBe(colors.text.primary);
@@ -100,8 +100,8 @@ it('matches Location default, selected, and permission-denied variants', () => {
   expect(denied.getByTestId('denied').props.accessibilityHint).toBe('Location access required');
 });
 
-it('keeps visual tokens internal while accepting picker layout constraints', () => {
-  const view = render(<Select
+it('keeps visual tokens internal while accepting picker layout constraints', async () => {
+  const view = await render(<Select
     label="Visibility"
     testID="visibility"
     style={{

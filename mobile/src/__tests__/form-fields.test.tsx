@@ -4,8 +4,8 @@ import { StyleSheet } from 'react-native';
 import { PasswordField, SearchField, TextField } from '../components/ui';
 import { colors, layout, radius, spacing, typography } from '../theme';
 
-it('matches the default Text Field geometry and tokens from Figma', () => {
-  const view = render(<TextField label="Email" placeholder="Enter your email" testID="email" />);
+it('matches the default Text Field geometry and tokens from Figma', async () => {
+  const view = await render(<TextField label="Email" placeholder="Enter your email" testID="email" />);
   const controlStyle = StyleSheet.flatten(view.getByTestId('email-control').props.style);
   const inputStyle = StyleSheet.flatten(view.getByTestId('email').props.style);
   const labelStyle = StyleSheet.flatten(view.getByTestId('email-label').props.style);
@@ -37,10 +37,10 @@ it('matches the default Text Field geometry and tokens from Figma', () => {
   expect(view.getByTestId('email').props.placeholderTextColor).toBe(colors.text.muted);
 });
 
-it('uses the teal two-pixel focus state and forwards focus events', () => {
+it('uses the teal two-pixel focus state and forwards focus events', async () => {
   const onFocus = jest.fn();
   const onBlur = jest.fn();
-  const view = render(<TextField
+  const view = await render(<TextField
     label="Email"
     placeholder="Enter your email"
     onFocus={onFocus}
@@ -49,14 +49,14 @@ it('uses the teal two-pixel focus state and forwards focus events', () => {
   />);
   const input = view.getByTestId('email');
 
-  fireEvent(input, 'focus', { nativeEvent: {} });
+  await fireEvent(input, 'focus', { nativeEvent: {} });
   expect(StyleSheet.flatten(view.getByTestId('email-control').props.style)).toEqual(expect.objectContaining({
     borderWidth: 2,
     borderColor: colors.action.secondary,
   }));
   expect(onFocus).toHaveBeenCalledTimes(1);
 
-  fireEvent(input, 'blur', { nativeEvent: {} });
+  await fireEvent(input, 'blur', { nativeEvent: {} });
   expect(StyleSheet.flatten(view.getByTestId('email-control').props.style)).toEqual(expect.objectContaining({
     borderWidth: 1,
     borderColor: colors.border.subtle,
@@ -64,8 +64,8 @@ it('uses the teal two-pixel focus state and forwards focus events', () => {
   expect(onBlur).toHaveBeenCalledTimes(1);
 });
 
-it('keeps the error state coral and exposes its message to assistive technology', () => {
-  const view = render(<TextField
+it('keeps the error state coral and exposes its message to assistive technology', async () => {
+  const view = await render(<TextField
     label="Email"
     error="Enter a valid email address"
     testOnly_focused
@@ -80,8 +80,8 @@ it('keeps the error state coral and exposes its message to assistive technology'
   expect(view.getByTestId('email').props.accessibilityHint).toBe('Enter a valid email address');
 });
 
-it('maps disabled state to native editability and accessibility', () => {
-  const view = render(<TextField disabled label="Email" value="souad@musicroom.app" testID="email" />);
+it('maps disabled state to native editability and accessibility', async () => {
+  const view = await render(<TextField disabled label="Email" value="souad@musicroom.app" testID="email" />);
   const input = view.getByTestId('email');
 
   expect(input.props.editable).toBe(false);
@@ -89,8 +89,8 @@ it('maps disabled state to native editability and accessibility', () => {
   expect(StyleSheet.flatten(input.props.style).color).toBe(colors.text.muted);
 });
 
-it('securely renders Password Field and toggles visibility with an accessible target', () => {
-  const view = render(<PasswordField value="password" testID="password" />);
+it('securely renders Password Field and toggles visibility with an accessible target', async () => {
+  const view = await render(<PasswordField value="password" testID="password" />);
   const input = view.getByTestId('password');
   const toggle = view.getByTestId('password-visibility-toggle');
 
@@ -102,13 +102,13 @@ it('securely renders Password Field and toggles visibility with an accessible ta
     height: layout.minimumTouchTarget,
   }));
 
-  fireEvent.press(toggle);
+  await fireEvent.press(toggle);
   expect(view.getByTestId('password').props.secureTextEntry).toBe(false);
   expect(view.getByTestId('password-visibility-toggle').props.accessibilityLabel).toBe('Hide password');
 });
 
-it('uses the full-radius Figma Search Field with search keyboard behavior', () => {
-  const view = render(<SearchField testOnly_focused testID="search" />);
+it('uses the full-radius Figma Search Field with search keyboard behavior', async () => {
+  const view = await render(<SearchField testOnly_focused testID="search" />);
 
   expect(StyleSheet.flatten(view.getByTestId('search-control').props.style)).toEqual(expect.objectContaining({
     height: spacing[48],
@@ -122,8 +122,8 @@ it('uses the full-radius Figma Search Field with search keyboard behavior', () =
   }));
 });
 
-it('keeps tokenized visuals internal while accepting field layout constraints', () => {
-  const view = render(<TextField
+it('keeps tokenized visuals internal while accepting field layout constraints', async () => {
+  const view = await render(<TextField
     label="Email"
     testID="email"
     style={{

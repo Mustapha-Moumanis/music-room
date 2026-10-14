@@ -1,1 +1,1 @@
-export { StrangerProfileScreen as default } from '../../../src/features/profile-friends/profile-friends-screens';
+export { StrangerProfileScreen as default } from '../../../src/features/profile-friends/viewer-profile-screens';

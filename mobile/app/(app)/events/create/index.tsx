@@ -1,1 +1,1 @@
-export { CreateEventBasicScreen as default } from '../../../../src/features/track-vote/track-vote-screens';
+export { CreateEventBasicScreen as default } from '../../../../src/features/track-vote/create-event-screens';

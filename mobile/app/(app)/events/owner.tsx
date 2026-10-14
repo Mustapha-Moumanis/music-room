@@ -1,1 +1,1 @@
-export { OwnerEventRoomScreen as default } from '../../../src/features/track-vote/track-vote-screens';
+export { OwnerEventRoomScreen as default } from '../../../src/features/track-vote/event-room-screens';
